@@ -1,0 +1,8 @@
+number_of_production_lines 2
+range_of_liquid_medicines 5 10
+range_of_pill_medicines 5 10
+threshold_of_num_liquid_medicines_produced 10
+threshold_of_num_pill_medicines_produced 10
+threshold_of_num_liquid_medicines_failed 10
+threshold_of_num_pill_medicines_failed 10
+simulation_threshold_time 100
