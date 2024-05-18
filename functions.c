@@ -1,7 +1,5 @@
 #include "header.h"
 
-int num_cargo_planes = 5;
-
 void readFromFile(const char *filename, int *array)
 {
     char tempLine[MAX_LINE_LENGTH];
@@ -40,55 +38,30 @@ void readFromFile(const char *filename, int *array)
         }
 
         // Assign values based on variable name
-        if (strcmp(varName, "range_num_wheat_flour_containers") == 0)
+        if (strcmp(varName, "range_of_liquid_medicines") == 0)
         {
-            range_num_wheat_flour_containers[0] = min;
-            range_num_wheat_flour_containers[1] = max;
+            range_of_liquid_medicines[0] = min;
+            range_of_liquid_medicines[1] = max;
         }
-        else if (strcmp(varName, "range_num_bages") == 0)
+        else if (strcmp(varName, "range_of_pill_medicines") == 0)
         {
-            range_num_bages[0] = min;
-            range_num_bages[1] = max;
+            range_of_pill_medicines[0] = min;
+            range_of_pill_medicines[1] = max;
         }
-        else if (strcmp(varName, "period_dropping_wheat_flour_container") == 0)
+        else if (strcmp(varName, "range_of_plastic_containers") == 0)
         {
-            period_dropping_wheat_flour_container[0] = min;
-            period_dropping_wheat_flour_container[1] = max;
+            range_of_plastic_containers[0] = min;
+            range_of_plastic_containers[1] = max;
         }
-        else if (strcmp(varName, "period_refill_planes") == 0)
+        else if (strcmp(varName, "range_of_pills") == 0)
         {
-            period_refill_planes[0] = min;
-            period_refill_planes[1] = max;
+            range_of_pills[0] = min;
+            range_of_pills[1] = max;
         }
-        else if (strcmp(varName, "range_bags_per_distrib_worker") == 0)
+        else if (strcmp(varName, "range_speed_lines") == 0)
         {
-            range_bags_per_distrib_worker[0] = min;
-            range_bags_per_distrib_worker[1] = max;
-        }
-        else if (strcmp(varName, "period_trip_collecting_committees") == 0)
-        {
-            period_trip_collecting_committees[0] = min;
-            period_trip_collecting_committees[1] = max;
-        }
-        else if (strcmp(varName, "range_energy_of_workers") == 0)
-        {
-            range_energy_of_workers[0] = min;
-            range_energy_of_workers[1] = max;
-        }
-        else if (strcmp(varName, "energy_loss_range") == 0)
-        {
-            energy_loss_range[0] = min;
-            energy_loss_range[1] = max;
-        }
-        else if (strcmp(varName, "range_starvation_increase") == 0)
-        {
-            range_starvation_increase[0] = min;
-            range_starvation_increase[1] = max;
-        }
-        else if (strcmp(varName, "range_starvation_decrease") == 0)
-        {
-            range_starvation_decrease[0] = min;
-            range_starvation_decrease[1] = max;
+            range_speed_lines[0] = min;
+            range_speed_lines[1] = max;
         }
     }
     fclose(file); // closing the file

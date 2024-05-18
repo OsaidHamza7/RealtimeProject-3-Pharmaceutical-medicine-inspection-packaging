@@ -24,77 +24,43 @@ int x = 0;
 int size = 0;
 int i = 0;
 int pid = 0;
-int number_of_occupations = 3;
 int is_end = 0;
 int msg_gui;
 struct msgbuf msg;
 
+char production_line_num[2];
 // arrays of pids for all the processes
-pid_t arr_pids_occupation[MAX_NUM_OCUPATIONS];
-pid_t arr_pids_planes[MAX_NUM_PLANES];
-pid_t arr_pids_collecting_committees[MAX_NUM_COLLECTION_COMMITTEES];
-pid_t arr_pids_splitting_workers[MAX_NUM_SPLITTING_WORKERS];
-pid_t arr_pids_distributing_workers[MAX_NUM_DISTRIBUTING_WORKERS];
-pid_t arr_pids_families[MAX_NUM_FAMILIES];
+pid_t pids_production_lines_liquid[MAX_NUM_PRODUCTION_LINES_LIQUID];
+pid_t pids_production_lines_pill[MAX_NUM_PRODUCTION_LINES_PILL];
 
 // arrays of structs for all the processes
-Plane planes[MAX_NUM_PLANES];
-Collecting_Committee collecting_committees[MAX_NUM_COLLECTION_COMMITTEES];
-Distributing_Worker distributing_workers[MAX_NUM_DISTRIBUTING_WORKERS];
-Family *families;
-Splitting_Worker splitting_workers[MAX_NUM_SPLITTING_WORKERS];
+Liquid_Production_Line production_lines_liquid[MAX_NUM_PRODUCTION_LINES_LIQUID];
+Pill_Production_Line production_lines_pill[MAX_NUM_PRODUCTION_LINES_PILL];
 
 // arguments from the file
-char range_num_containers[10];
-char range_num_bags[10];
-char range_dropping_time[10];
-char range_refill_planes[10];
-char str_period_trip_committees[10];
-char str_range_energy_workers[10];
-char str_period_energy_reduction[10];
-char str_energy_loss[10];
-char range_num_bags_distrib_worker[10];
-char str_num_cargo_planes[10];
-char plane_num[10];
-char committee_num[10];
-char splitting_worker_num[10];
-char distributing_worker_num[10];
-char number_of_committees[10];
-char number_of_workers[10];
-char number_of_families[10];
-char range_starv_increase[10];
-char range_starv_decrease[10];
-char str_period_starvation_increase[10];
-char occupation_num[10];
-char num_splitting_workers[10];
+int num_liquid_production_lines = 0;
+int num_pill_production_lines = 0;
+int num_employees;
+int threshold_of_num_liquid_medicines_produced;
+int threshold_of_num_pill_medicines_produced;
+int threshold_of_num_liquid_medicines_failed;
+int threshold_of_num_pill_medicines_failed;
+int simulation_threshold_time;
+
+int range_of_liquid_medicines[2];
+int range_of_pill_medicines[2];
+int range_of_plastic_containers[2];
+int range_of_pills[2];
+int range_speed_lines[2];
 // IPCs resources
 
 // message queues
-int msg_ground;
-int msg_safe_area;
 
 // shared memories for struct of processes
-char *shmptr_plane;
-char *shmptr_collecting_committees;
-char *shmptr_splitting_workers;
-char *shmptr_splitted_bages;
-char *shmptr_distributing_workers;
-char *shmptr_families;
 
 // shared memories for thresholds
-char *shmptr_threshold_num_cargo_planes_crashed;
-char *shmptr_threshold_wheat_flour_containers_shoted;
-char *shmptr_threshold_martyred_collecting_committee_workers;
-char *shmptr_threshold_martyred_distributing_workers;
-char *shmptr_threshold_num_deceased_families;
 
 // semaphores
-int sem_splitted_bags;
-int sem_spaces_available;
-int sem_planes;
-int sem_collecting_committees;
-int sem_distributing_workers;
-int sem_starviation_familes;
 
 int main(int argc, char **argv)
 {
@@ -107,20 +73,21 @@ int main(int argc, char **argv)
     checkArguments(argc, argv, file_name);
 
     // to read from User defined numbers file (filename.txt)
-    // readFromFile(file_name, arr_of_arguments);
+    readFromFile(file_name, arr_of_arguments);
 
     // get the arguments from the file
-    // getArguments(arr_of_arguments);
-    // printArguments();
+    getArguments(arr_of_arguments);
+    printArguments();
 
     // initialize IPCs resources (shared memory, semaphores, message queues)
     // initializeIPCResources();
-    // init_signals_handlers();
-    // alarm(simulation_threshold_time);
+    init_signals_handlers();
+    alarm(simulation_threshold_time);
 
     //  create the GUI
     // createGUI();
-    createPlanes();
+    createLiquidProductionLines();
+    createPillProductionLines();
 
     while (1)
     {
@@ -170,10 +137,10 @@ void signal_handler_SIGCLD(int sig)
     fflush(stdout);
 }
 
-void createPlanes()
+void createLiquidProductionLines()
 {
 
-    for (i = 0; i < num_cargo_planes; i++)
+    for (i = 0; i < num_liquid_production_lines; i++)
     {
         switch (pid = fork())
         {
@@ -184,21 +151,19 @@ void createPlanes()
             break;
 
         case 0: // I'm plane
-            sprintf(range_num_containers, "%d %d", range_num_wheat_flour_containers[0], range_num_wheat_flour_containers[1]);
-            sprintf(range_num_bags, "%d %d", range_num_bages[0], range_num_bages[1]);
-            sprintf(range_dropping_time, "%d %d", period_dropping_wheat_flour_container[0], period_dropping_wheat_flour_container[1]);
-            sprintf(range_refill_planes, "%d %d", period_refill_planes[0], period_refill_planes[1]);
-            sprintf(str_num_cargo_planes, "%d", num_cargo_planes);
+            sprintf(str_range_of_speeds, "%d %d", range_of_speed[0], range_of_speed[1]);
+            sprintf(str_num_employees, "%d", num_employees);
+            sprintf(str_range_num_midicines, "%d %d", range_of_liquid_medicines);
 
-            sprintf(plane_num, "%d", i + 1);
+            sprintf(production_line_num, "%d", i + 1);
 
-            execlp("./plane", "plane", plane_num, range_num_containers, range_num_bags, range_dropping_time, range_refill_planes, str_num_cargo_planes, NULL);
+            execlp("./liquid_production_line", "liquid_production_line", production_line_num, str_num_employees, str_range_num_midicines, str_range_of_speed, NULL);
             perror("Error:Execute plane Failed.\n");
             exit(1);
             break;
 
         default: // I'm parent
-            arr_pids_planes[i] = pid;
+            pids_production_lines_liquid = pid;
             break;
         }
     }
@@ -275,53 +240,33 @@ void initializeIPCResources()
 
 void getArguments(int *numberArray)
 {
-    num_cargo_planes = numberArray[0];
-    period_energy_reduction = numberArray[1];
-    num_families = numberArray[2];
-    num_collecting_relief_committees = numberArray[3];
-    num_workers_in_collecting_committee = numberArray[4];
-    num_splitting_relief_workers = numberArray[5];
-    num_distributing_relief_workers = numberArray[6];
-    distrib_relief_worker_threshold = numberArray[7];
-    simulation_threshold_time = numberArray[8];
-    threshold_families_death_rate = numberArray[9];
-    threshold_num_cargo_planes_crashed = numberArray[10];
-    threshold_wheat_flour_containers_shoted = numberArray[11];
-    threshold_martyred_collecting_committee_workers = numberArray[12];
-    threshold_martyred_distributing_workers = numberArray[13];
-    threshold_num_deceased_families = numberArray[14];
-    period_starvation_increase = numberArray[15];
+    num_liquid_production_lines = numberArray[0];
+    num_pill_production_lines = numberArray[1];
+    num_employees = numberArray[2];
+    threshold_of_num_liquid_medicines_produced = numberArray[3];
+    threshold_of_num_pill_medicines_produced = numberArray[4];
+    threshold_of_num_liquid_medicines_failed = numberArray[5];
+    threshold_of_num_pill_medicines_failed = numberArray[6];
+    simulation_threshold_time = numberArray[7];
 }
 
 void printArguments()
 {
     // print the arguments read from the file
-    printf("num_cargo_planes = %d\n", num_cargo_planes);
-    printf("range_num_wheat_flour_containers = %d %d\n", range_num_wheat_flour_containers[0], range_num_wheat_flour_containers[1]);
-    printf("range_num_bages = %d %d\n", range_num_bages[0], range_num_bages[1]);
-    printf("period_dropping_wheat_flour_container = %d %d\n", period_dropping_wheat_flour_container[0], period_dropping_wheat_flour_container[1]);
-    printf("period_refill_planes = %d %d\n", period_refill_planes[0], period_refill_planes[1]);
-    printf("period_trip_collecting_committees = %d %d\n", period_trip_collecting_committees[0], period_trip_collecting_committees[1]);
-    printf("range_energy_of_workers = %d %d\n", range_energy_of_workers[0], range_energy_of_workers[1]);
-    printf("period_energy_reduction = %d\n", period_energy_reduction);
-    printf("energy_loss_range = %d %d\n", energy_loss_range[0], energy_loss_range[1]);
-    printf("num_families = %d\n", num_families);
-    printf("num_collecting_relief_committees = %d\n", num_collecting_relief_committees);
-    printf("num_workers_in_collecting_committee = %d\n", num_workers_in_collecting_committee);
-    printf("num_splitting_relief_workers = %d\n", num_splitting_relief_workers);
-    printf("num_distributing_relief_workers = %d\n", num_distributing_relief_workers);
-    printf("range_bags_per_distrib_worker = %d %d\n", range_bags_per_distrib_worker[0], range_bags_per_distrib_worker[1]);
-    printf("distrib_relief_worker_threshold = %d\n", distrib_relief_worker_threshold);
-    printf("simulation_threshold_time = %d\n", simulation_threshold_time);
-    printf("threshold_families_death_rate = %d\n", threshold_families_death_rate);
-    printf("threshold_num_cargo_planes_crashed = %d\n", threshold_num_cargo_planes_crashed);
-    printf("threshold_wheat_flour_containers_shoted = %d\n", threshold_wheat_flour_containers_shoted);
-    printf("threshold_martyred_collecting_committee = %d\n", threshold_martyred_collecting_committee_workers);
-    printf("threshold_martyred_distributing_workers = %d\n", threshold_martyred_distributing_workers);
-    printf("threshold_num_deceased_families = %d\n", threshold_num_deceased_families);
-    printf("period_starvation_increase = %d\n", period_starvation_increase);
-    printf("range_starvation_increase = %d %d\n", range_starvation_increase[0], range_starvation_increase[1]);
-    printf("range_starvation_decrease = %d %d\n", range_starvation_decrease[0], range_starvation_decrease[1]);
+    printf("The arguments read from the file are:\n");
+    printf("Number of liquid production lines: %d\n", num_liquid_production_lines);
+    printf("Number of pill production lines: %d\n", num_pill_production_lines);
+    printf("Number of employees: %d\n", num_employees);
+    printf("Range of liquid medicines: %d - %d\n", range_of_liquid_medicines[0], range_of_liquid_medicines[1]);
+    printf("Range of pill medicines: %d - %d\n", range_of_pill_medicines[0], range_of_pill_medicines[1]);
+    printf("Range of plastic containers: %d - %d\n", range_of_plastic_containers[0], range_of_plastic_containers[1]);
+    printf("Range of pills: %d - %d\n", range_of_pills[0], range_of_pills[1]);
+
+    printf("Threshold of number of liquid medicines produced: %d\n", threshold_of_num_liquid_medicines_produced);
+    printf("Threshold of number of pill medicines produced: %d\n", threshold_of_num_pill_medicines_produced);
+    printf("Threshold of number of liquid medicines failed: %d\n", threshold_of_num_liquid_medicines_failed);
+    printf("Threshold of number of pill medicines failed: %d\n", threshold_of_num_pill_medicines_failed);
+    printf("Simulation threshold time: %d\n", simulation_threshold_time);
     printf("\n");
 }
 
