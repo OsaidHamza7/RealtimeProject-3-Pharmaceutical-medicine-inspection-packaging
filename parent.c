@@ -48,16 +48,18 @@ char str_num_plastic_containers[10];
 char str_num_pills[10];
 char str_range_size_pill[20];
 char str_range_color_pill[20];
+char num_of_liquid_production_lines[10];
 
 // IPCs resources
 
 // message queues
 
 // shared memories for struct of processes
-
+char *shmptr_liquid_production_lines;
 // shared memories for thresholds
 
 // semaphores
+int sem_liquid_production_lines;
 
 int main(int argc, char **argv)
 {
@@ -77,13 +79,13 @@ int main(int argc, char **argv)
     printArguments();
 
     // initialize IPCs resources (shared memory, semaphores, message queues)
-    // initializeIPCResources();
+    initializeIPCResources();
     init_signals_handlers();
     alarm(simulation_threshold_time);
 
     //  create the GUI
     // createGUI();
-    // createLiquidProductionLines();
+    createLiquidProductionLines();
     // createPillProductionLines();
 
     while (1)
@@ -113,23 +115,17 @@ void init_signals_handlers()
         perror("Signal Error\n");
         exit(-1);
     }
-    if (sigset(SIGCLD, signal_handler_SIGCLD) == -1)
-    { // set the signal handler for SIGALRM
-        perror("Signal Error\n");
-        exit(-1);
-    }
+    // if (sigset(SIGCLD, signal_handler_SIGCLD) == -1)
+    // { // set the signal handler for SIGALRM
+    //     perror("Signal Error\n");
+    //     exit(-1);
+    // }
 }
 
 // function signal_handler_SIGALRM
 void signal_handler_SIGALRM(int sig)
 {
     is_alarmed = 1;
-    printf("The signal %d reached the parent\n\n", sig);
-    fflush(stdout);
-}
-
-void signal_handler_SIGCLD(int sig)
-{
     printf("The signal %d reached the parent\n\n", sig);
     fflush(stdout);
 }
@@ -143,21 +139,22 @@ void createLiquidProductionLines()
         {
 
         case -1: // Fork Failed
-            perror("Error:Fork Plane Failed.\n");
+            perror("Error:Fork liquid production line Failed.\n");
             exit(1);
             break;
 
-        case 0: // I'm plane
-            sprintf(str_range_of_speeds, "%d %d", range_speed_lines[0], range_speed_lines[1]);
-            sprintf(str_num_employees, "%d", num_employees);
-            sprintf(str_range_num_midicines, "%d %d", range_of_liquid_medicines[0], range_of_pill_medicines[1]);
+        case 0: // liquid production line
             sprintf(production_line_num, "%d", i + 1);
+            sprintf(num_of_liquid_production_lines, "%d", num_liquid_production_lines);
+            sprintf(str_num_employees, "%d", num_employees);
+            sprintf(str_range_num_midicines, "%d %d", range_of_liquid_medicines[0], range_of_liquid_medicines[1]);
+            sprintf(str_range_of_speeds, "%d %d", range_speed_lines[0], range_speed_lines[1]);
 
             sprintf(str_range_level_liquid_medicine, "%d %d", range_level_liquid_medicine[0], range_level_liquid_medicine[1]);
             sprintf(str_range_color_liquid_medicine, "%d %d", range_color_liquid_medicine[0], range_color_liquid_medicine[1]);
 
-            execlp("./liquid_production_line", "liquid_production_line", production_line_num, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine, NULL);
-            perror("Error:Execute plane Failed.\n");
+            execlp("./liquid_production_line", "liquid_production_line", production_line_num, num_of_liquid_production_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine, NULL);
+            perror("Error:Execute liquid production line Failed.\n");
             exit(1);
             break;
 
@@ -235,7 +232,7 @@ void initializeIPCResources()
     // msg_ground = createMessageQueue(MSGQKEY_GROUND, "parent.c");       // Create a massage queue for the ground
 
     // Create a Shared Memories for struct of processes (4 shared memories done)
-    // shmptr_plane = createSharedMemory(SHKEY_PLANES, num_cargo_planes * sizeof(struct Plane), "parent.c");                                                        // Create a shared memory for all struct planes
+    shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), "parent.c");
 
     // Create a Shared Memories for thresholds (5 shared memories done)
     // shmptr_threshold_num_cargo_planes_crashed = createSharedMemory(SHKEY_THRESHOLD_NUM_CARGO_PLANES_CRASHED, sizeof(int), "parent.c");
@@ -247,7 +244,7 @@ void initializeIPCResources()
     // memcpy(shmptr_threshold_num_cargo_planes_crashed, &x, sizeof(int));
 
     // Create a Semaphores
-    // sem_planes = createSemaphore(SEMKEY_PLANES, 1, 1, "parent.c");
+    sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "parent.c");
 }
 
 void getArguments(int *numberArray)
@@ -310,13 +307,17 @@ void exitProgram()
     fflush(stdout);
 
     // kill all the child processes
-    // killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
+    killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
     // killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
 
     printf("All child processes killed\n");
 
     printf("Cleaning up IPC resources...\n");
     fflush(stdout);
+
+    deleteSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), shmptr_liquid_production_lines);
+
+    deleteSemaphore(sem_liquid_production_lines);
 
     printf("IPC resources cleaned up successfully\n");
     printf("Exiting...\n");
