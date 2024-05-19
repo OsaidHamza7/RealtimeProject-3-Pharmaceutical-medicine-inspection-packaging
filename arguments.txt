@@ -1,13 +1,17 @@
-num_liquid_production_lines 2
-num_pill_production_lines 2
-num_employees 5
-range_speed_lines 10 50
-range_of_liquid_medicines 5 10
-range_of_pill_medicines 5 10
-range_of_plastic_containers 5 10
-range_of_pills 3 10
-threshold_of_num_liquid_medicines_produced 10
-threshold_of_num_pill_medicines_produced 10
-threshold_of_num_liquid_medicines_failed 10
-threshold_of_num_pill_medicines_failed 10
-simulation_threshold_time 100
+num_liquid_production_lines 0
+num_pill_production_lines 1
+num_employees 2
+range_speed_lines 3,4
+range_of_liquid_medicines 5,6
+range_of_pill_medicines 7,8
+range_of_plastic_containers 9,10
+range_of_pills 11,12
+range_level_liquid_medicine 13,14
+range_color_liquid_medicine 14,15
+range_size_pill 16,17
+range_color_pill 18,19
+threshold_of_num_liquid_medicines_produced 20
+threshold_of_num_pill_medicines_produced 21
+threshold_of_num_liquid_medicines_failed 22
+threshold_of_num_pill_medicines_failed 23
+simulation_threshold_time 24

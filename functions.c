@@ -1,5 +1,24 @@
 #include "header.h"
 
+int num_liquid_production_lines = 5;
+int num_pill_production_lines = 5;
+int num_employees = 10;
+int range_speed_lines[2] = {1, 5};
+int range_of_liquid_medicines[2] = {1, 5};
+int range_of_pill_medicines[2] = {1, 5};
+int range_of_plastic_containers[2] = {1, 5};
+int range_of_pills[2] = {1, 5};
+int range_level_liquid_medicine[2] = {1, 5};
+int range_color_liquid_medicine[2] = {1, 5};
+int range_size_pill[2] = {1, 5};
+int range_color_pill[2] = {1, 5};
+
+int threshold_of_num_liquid_medicines_produced = 100;
+int threshold_of_num_pill_medicines_produced = 100;
+int threshold_of_num_liquid_medicines_failed = 10;
+int threshold_of_num_pill_medicines_failed = 10;
+int simulation_threshold_time = 60;
+
 void readFromFile(const char *filename, int *array)
 {
     char tempLine[MAX_LINE_LENGTH];
@@ -62,6 +81,26 @@ void readFromFile(const char *filename, int *array)
         {
             range_speed_lines[0] = min;
             range_speed_lines[1] = max;
+        }
+        else if (strcmp(varName, "range_level_liquid_medicine") == 0)
+        {
+            range_level_liquid_medicine[0] = min;
+            range_level_liquid_medicine[1] = max;
+        }
+        else if (strcmp(varName, "range_color_liquid_medicine") == 0)
+        {
+            range_color_liquid_medicine[0] = min;
+            range_color_liquid_medicine[1] = max;
+        }
+        else if (strcmp(varName, "range_size_pill") == 0)
+        {
+            range_size_pill[0] = min;
+            range_size_pill[1] = max;
+        }
+        else if (strcmp(varName, "range_color_pill") == 0)
+        {
+            range_color_pill[0] = min;
+            range_color_pill[1] = max;
         }
     }
     fclose(file); // closing the file

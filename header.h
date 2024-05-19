@@ -30,6 +30,8 @@
 #define MAX_LINE_LENGTH 255
 #define NUM_SEMAPHORES 2
 
+#define MAX_NUM_LIQUID_PRODUCTION_LINES 100
+#define MAX_NUM_PILL_PRODUCTION_LINES 100
 #define MAX_NUM_LIQUID_MEDICINES 100
 #define MAX_NUM_PILL_MEDICINES 100
 #define MAX_NUM_PLASTIC_CONTAINERS 100
@@ -51,6 +53,40 @@ struct String
     char str[MAX_LINE_LENGTH];
 };
 
+typedef struct Plastic_Container
+{
+    int id;
+    int num_pills;
+    int pills[MAX_NUM_PILLS];
+} Plastic_Container;
+
+typedef struct Pill
+{
+    int id;
+    int color;
+    int size;
+} Pill;
+
+typedef struct Liquid_Medicine
+{
+    int id;
+    int production_line_id;
+    int level;
+    int color;
+    bool is_sealed;
+    bool is_label_placed;
+    int expiry_date;
+} Liquid_Medicine;
+
+typedef struct Pill_Medicine
+{
+    int id;
+    int production_line_num;
+    int num_plastic_containers;
+    Plastic_Container plastic_containers[MAX_NUM_PLASTIC_CONTAINERS];
+    int Expiry_date;
+} Pill_Medicine;
+
 typedef struct Pill_Production_Line
 {
     pid_t pid;
@@ -71,49 +107,20 @@ typedef struct Liquid_Production_Line
     int speed;
 } Liquid_Production_Line;
 
-typedef struct Liquid_Medicine
-{
-    int id;
-    int production_line_id;
-    int level;
-    int color;
-    bool is_sealed;
-    bool is_label_placed;
-    int expiry_date;
-} Liquid_Medicine;
-
-typedef struct Pill_Medicine
-{
-    int id;
-    int production_line_num;
-    int num_plastic_containers;
-    Plastic_Container[Max_Num_Plastic_Containers];
-    int Expiry_date;
-} Pill_Medicine;
-
-typedef struct Plastic_Container
-{
-    int id;
-    int num_pills;
-    int Pills[Max_Num_Pills](array of struct Pills)
-} Plastic_Container;
-
-typedef struct Pill
-{
-    int id;
-    int color;
-    int size;
-} Pill;
-
 // ===================================================================================
 extern int num_liquid_production_lines;
 extern int num_pill_production_lines;
 extern int num_employees;
+extern int range_speed_lines[2];
 extern int range_of_liquid_medicines[2];
 extern int range_of_pill_medicines[2];
 extern int range_of_plastic_containers[2];
 extern int range_of_pills[2];
-extern int range_of_speed[2];
+extern int range_level_liquid_medicine[2];
+extern int range_color_liquid_medicine[2];
+extern int range_size_pill[2];
+extern int range_color_pill[2];
+
 // thresholds
 extern int threshold_of_num_liquid_medicines_produced;
 extern int threshold_of_num_pill_medicines_produced;
