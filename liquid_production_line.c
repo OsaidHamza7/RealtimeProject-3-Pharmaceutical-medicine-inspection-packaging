@@ -60,6 +60,7 @@ void getInformation(char **argv)
     split_string(argv[6], range_level_liq_medicine);
     split_string(argv[7], range_color_liq_medicine);
 
+    printf("=====================================================================\n");
     // print all arguments
     printf("production_line_num: %d\n", production_line_num);
     printf("num_of_liquid_production_lines: %d\n", num_of_liquid_production_lines);
@@ -81,6 +82,8 @@ void getInformation(char **argv)
     releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
     printf("Liquid Production Line %d is created with %d employees, %d medicines, and speed %d\n\n", liquid_production_line->num, liquid_production_line->num_employes, liquid_production_line->num_medicines, liquid_production_line->speed);
+    fflush(stdout);
+    printf("=====================================================================\n");
     fflush(stdout);
 }
 

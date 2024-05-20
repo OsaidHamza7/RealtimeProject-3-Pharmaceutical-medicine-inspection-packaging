@@ -67,12 +67,6 @@ struct String
     char str[MAX_LINE_LENGTH];
 };
 
-typedef struct Plastic_Container
-{
-    int id;
-    int num_pills;
-    int pills[MAX_NUM_PILLS];
-} Plastic_Container;
 
 typedef struct Pill
 {
@@ -80,6 +74,13 @@ typedef struct Pill
     int color;
     int size;
 } Pill;
+
+typedef struct Plastic_Container
+{
+    int id;
+    int num_pills;
+    Pill pills[MAX_NUM_PILLS];
+} Plastic_Container;
 
 typedef struct Liquid_Medicine
 {
