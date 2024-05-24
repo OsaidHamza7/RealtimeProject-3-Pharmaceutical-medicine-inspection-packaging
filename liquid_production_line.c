@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < num_of_liquid_production_lines; i++)
     {
         employee_id[i] = i;
-        pthread_create(&employees[i], NULL, employee, (void *)&employee_id[i]);
+        pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
     }
 
     // wait for the threads to finish
