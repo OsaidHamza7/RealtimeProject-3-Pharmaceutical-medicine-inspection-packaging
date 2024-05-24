@@ -19,33 +19,71 @@ Liquid_Production_Line *liquid_production_lines;
 
 char *shmptr_liquid_production_lines;
 int sem_liquid_production_lines;
+sem_t mutex;
+
+void employee1(void* args){
+    int* emp_id=(int*) args;
+    while(1){
+        sem_wait(&mutex);
+            printf("i'm %d doing the task one\n",*emp_id);
+            sleep(3);
+            sem_wait(&mutex);
+            printf("i'm %d done task 1\n",*emp_id);
+            sleep(2);
+    }
+
+}
+void employee2(void* args){
+ int* emp_id=(int*) args;
+    while(1){
+            sem_wait(&mutex);
+            printf("i'm %d doing the task two\n",*emp_id);
+            sleep(3);
+            sem_wait(&mutex);
+            printf("i'm %d done task 2\n",*emp_id);
+            sleep(2);
+    }
+
+}
+
 
 int main(int argc, char **argv)
 {
     // check the number of arguments
-    if (argc < 8)
-    {
-        perror("The user should pass an argument like:production_line_num,num_of_liquid_production_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine\n");
-        exit(-1);
-    }
+    // if (argc < 8)
+    // {
+    //     perror("The user should pass an argument like:production_line_num,num_of_liquid_production_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine\n");
+    //     exit(-1);
+    // }
 
-    srand((unsigned)getpid()); // seed for the random function with the ID of the current process
-    production_line_num = atoi(argv[1]);
-    num_of_liquid_production_lines = atoi(argv[2]);
+    // srand((unsigned)getpid()); // seed for the random function with the ID of the current process
+    // production_line_num = atoi(argv[1]);
+    // num_of_liquid_production_lines = atoi(argv[2]);
 
-    // Open a shared memories
-    shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_of_liquid_production_lines * sizeof(struct Liquid_Production_Line), "liquid_production_line.c");
-    liquid_production_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
+    // // Open a shared memories
+    // shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_of_liquid_production_lines * sizeof(struct Liquid_Production_Line), "liquid_production_line.c");
+    // liquid_production_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
 
-    // Open the semaphores
-    sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");
+    // // Open the semaphores
+    // sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");
+    //0 :shared between threads 1 :shared between process
+    sem_init(&mutex,0,1);
+    //creats threads for employees 
+    pthread_t emp1,emp2;
+    int emp1_id =10;
+    int emp2_id=20;
+    pthread_create(&emp1,NULL,employee1,(void *)&emp1_id);
+    pthread_create(&emp2,NULL,employee2,(void *)&emp2_id);
 
+    pthread_join(emp1,NULL);
+    pthread_join(emp2,NULL);
     // get information from the arguments
-    getInformation(argv);
+    //getInformation(argv);
 
     // while (1)
     // {
     // }
+    sem_destroy(&mutex);
     return 0;
 }
 
