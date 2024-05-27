@@ -52,6 +52,8 @@ char num_of_liquid_production_lines[10];
 char str_num_pill_lines[10];
 char str_range_expected_level[20];
 char str_range_expected_color[20];
+char str_range_expected_size_pill[20];
+char str_range_expected_color_pill[20];
 
 // IPCs resources
 
@@ -90,8 +92,8 @@ int main(int argc, char **argv)
 
     //  create the GUI
     // createGUI();
-    createLiquidProductionLines();
-    //createPillProductionLines();
+    // createLiquidProductionLines();
+    createPillProductionLines();
 
     while (1)
     {
@@ -199,6 +201,9 @@ void createPillProductionLines()
             sprintf(str_range_size_pill, "%d %d", range_size_pill[0], range_size_pill[1]);
             sprintf(str_range_color_pill, "%d %d", range_color_pill[0], range_color_pill[1]);
 
+            sprintf(str_range_expected_size_pill, " %d %d", range_expected_pill_medicine_size[0], range_expected_pill_medicine_size[1]);
+            sprintf(str_range_expected_color_pill, " %d %d", range_expected_pill_medicine_color[0], range_expected_pill_medicine_color[1]);
+
             execlp("./pill_production_line", "pill_production_line", production_line_num, str_num_pill_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_num_plastic_containers, str_num_pills, str_range_size_pill, str_range_color_pill, NULL);
             perror("Error:Execute Pill Production Line Failed.\n");
             exit(1);
@@ -289,6 +294,8 @@ void printArguments()
     printf("Range of color pill: %d - %d\n", range_color_pill[0], range_color_pill[1]);
     printf("range_expected_liquid_medicine_level: %d - %d\n", range_expected_liquid_medicine_level[0], range_expected_liquid_medicine_level[1]);
     printf("range_expected_liquid_medicine_color: %d - %d\n", range_expected_liquid_medicine_color[0], range_expected_liquid_medicine_color[1]);
+    printf("range_expected_pill_medicine_color: %d - %d\n", range_expected_pill_medicine_color[0], range_expected_pill_medicine_color[1]);
+    printf("range_expected_pill_medicine_size: %d - %d\n", range_expected_pill_medicine_size[0], range_expected_pill_medicine_size[1]);
 
     printf("Threshold of number of liquid medicines produced: %d\n", threshold_of_num_liquid_medicines_produced);
     printf("Threshold of number of pill medicines produced: %d\n", threshold_of_num_pill_medicines_produced);
@@ -321,8 +328,8 @@ void exitProgram()
     fflush(stdout);
 
     // kill all the child processes
-    killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
-    //killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
+    // killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
+    killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
     // killAllProcesses(pid_gui, 1);
     printf("All child processes killed\n");
 

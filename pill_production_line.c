@@ -12,7 +12,7 @@ void createPillMedicines(Pill_Production_Line *pill_production_line);
 
 int production_line_num;
 int num_of_pill_production_lines;
-
+int number_of_employees;
 int range_of_speed[2];
 int range_number_of_medicines[2];
 
@@ -59,18 +59,18 @@ int main(int argc, char **argv)
 
     sem_init(&mutex, 0, 1);
     // creats threads for employees
-    pthread_t employees[num_employees];
+    pthread_t employees[number_of_employees];
 
-    int employee_id[num_employees];
+    int employee_id[number_of_employees];
     // create thread for each employee
-    for (int i = 0; i < num_employees; i++)
+    for (int i = 0; i < number_of_employees; i++)
     {
-        employee_id[i] = i;
+        employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
     }
 
     // wait for the threads to finish
-    for (int i = 0; i < num_employees; i++)
+    for (int i = 0; i < number_of_employees; i++)
     {
         pthread_join(employees[i], NULL);
     }
@@ -78,7 +78,9 @@ int main(int argc, char **argv)
     // while (1)
     // {
     // }
+
     sem_destroy(&mutex);
+
     return 0;
 }
 
@@ -87,7 +89,7 @@ void getInformation(char **argv)
     // get the information of the pill production line from the arguments
     pill_production_line = &pill_production_lines[production_line_num - 1];
     temp = pill_production_line;
-
+    number_of_employees = atoi(argv[3]);
     split_string(argv[4], range_number_of_medicines);
     split_string(argv[5], range_of_speed);
     split_string(argv[6], range_plastic_containers);
@@ -98,7 +100,7 @@ void getInformation(char **argv)
     printf("=====================================================================\n");
     // print the information of the pill production line
     printf("Pill Production Line %d\n", production_line_num);
-    printf("Number of employees: %d\n", atoi(argv[3]));
+    printf("Number of employees: %d\n", number_of_employees);
     printf("Number of Pill Medicines: %d - %d\n", range_number_of_medicines[0], range_number_of_medicines[1]);
     printf("Speed: %d - %d\n", range_of_speed[0], range_of_speed[1]);
     printf("Plastic Containers: %d - %d\n", range_plastic_containers[0], range_plastic_containers[1]);
@@ -111,7 +113,7 @@ void getInformation(char **argv)
 
     pill_production_line->pid = getpid();
     pill_production_line->num = production_line_num;
-    pill_production_line->num_employes = atoi(argv[3]);
+    pill_production_line->num_employes = number_of_employees;
     pill_production_line->num_medicines = get_random_number(range_number_of_medicines[0], range_number_of_medicines[1]);
     pill_production_line->speed = get_random_number(range_of_speed[0], range_of_speed[1]);
 
@@ -131,6 +133,7 @@ void init_signals_handlers()
         exit(-1);
     }*/
 }
+
 void employee(void *args)
 {
     int *emp_id = (int *)args;
@@ -177,18 +180,97 @@ void createPillMedicines(Pill_Production_Line *pill_Production_Line)
     // print the liquid medicines
     for (int i = 0; i < pill_Production_Line->num_medicines; i++)
     {
-        printf("Pill Medicine %d in production line num %d,with num plastic containers %d", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num, pill_Production_Line->pill_medicines[i].num_plastic_containers);
+        printf("Pill Medicine %d in production line num %d,with num plastic containers %d\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num, pill_Production_Line->pill_medicines[i].num_plastic_containers);
         fflush(stdout);
         for (int j = 0; j < pill_Production_Line->pill_medicines->num_plastic_containers; j++)
         {
-            printf("Plastic container with id %d, number of bills %d", pill_Production_Line->pill_medicines->plastic_containers[j].id, pill_Production_Line->pill_medicines->plastic_containers[j].num_pills);
+            printf("Plastic container with id %d, number of bills %d\n", pill_Production_Line->pill_medicines->plastic_containers[j].id, pill_Production_Line->pill_medicines->plastic_containers[j].num_pills);
             for (int k = 0; k < pill_Production_Line->pill_medicines->plastic_containers->num_pills; k++)
             {
-                printf("Pill with id %d, color %d, size %d", pill_Production_Line->pill_medicines->plastic_containers->pills[k].id, pill_Production_Line->pill_medicines->plastic_containers->pills[k].color, pill_Production_Line->pill_medicines->plastic_containers->pills[k].size);
+                printf("Pill with id %d, color %d, size %d\n", pill_Production_Line->pill_medicines->plastic_containers->pills[k].id, pill_Production_Line->pill_medicines->plastic_containers->pills[k].color, pill_Production_Line->pill_medicines->plastic_containers->pills[k].size);
                 fflush(stdout);
             }
         }
     }
     printf("=====================================================================\n");
     fflush(stdout);
+}
+
+// Make an inspection function for the pill production line to check No plastic container is missing any pill, Pills in the plastic containers have the correct color and size and Medicine expiry date is clearly printed on the plastic container label
+void make_inspection(Pill_Production_Line *pill_Production_Line)
+{
+    // check for each medicine
+    for (int i = 0; i < pill_Production_Line->num_medicines; i++)
+    {
+        if (pill_Production_Line->pill_medicines[i].is_inspected == 0)
+        {
+            printf("Pill Medicine %d in line %d is inspecting\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+            pill_Production_Line->pill_medicines[i].is_inspected = 1;
+            sleep(2); // sleep for 2 seconds to simulate the inspection process
+            if (pill_Production_Line->pill_medicines[i].num_plastic_containers >= range_of_plastic_containers[0] && pill_Production_Line->pill_medicines[i].num_plastic_containers <= range_of_plastic_containers[1])
+            {
+                printf("Pill Medicine %d in the production line %d is in expected range of the number for plastic containers\n\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                fflush(stdout);
+            }
+            else
+            {
+                printf("Pill Medicine %d in line %d is NOT in expected range of number of plastic containers\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                pill_Production_Line->pill_medicines[i].is_failed = 1;
+                break;
+            }
+
+            for (int j = 0; j < pill_Production_Line->pill_medicines->num_plastic_containers; j++)
+            {
+                if (pill_Production_Line->pill_medicines->plastic_containers[i].num_pills >= range_of_pills[0] && pill_Production_Line->pill_medicines->plastic_containers[i].num_pills <= range_of_pills[1])
+                {
+                    printf("Pill Medicine %d in line %d is in expected range of number of pills\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                    fflush(stdout);
+                }
+                else
+                {
+                    printf("Pill Medicine %d in line %d is NOT in expected range of number of pills\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                    pill_Production_Line->pill_medicines[i].is_failed = 1;
+                    break;
+                }
+
+                // Pills in the plastic containers have the correct color and size
+                for (int k = 0; k < pill_Production_Line->pill_medicines->plastic_containers->num_pills; k++)
+                {
+                    if (pill_Production_Line->pill_medicines->plastic_containers->pills[k].color >= range_color_pill[0] && pill_Production_Line->pill_medicines->plastic_containers->pills[k].color <= range_color_pill[1])
+                    {
+                        printf("Pill Medicine %d in line %d is in expected range of color of pills\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                        fflush(stdout);
+                    }
+                    else
+                    {
+                        printf("Pill Medicine %d in line %d is NOT in expected range of color of pills\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                        pill_Production_Line->pill_medicines[i].is_failed = 1;
+                        break;
+                    }
+
+                    if (pill_Production_Line->pill_medicines->plastic_containers->pills[k].size >= range_size_pill[0] && pill_Production_Line->pill_medicines->plastic_containers->pills[k].size <= range_size_pill[1])
+                    {
+                        printf("Pill Medicine %d in line %d is in expected range of size of pills\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                        fflush(stdout);
+                    }
+                    else
+                    {
+                        printf("Pill Medicine %d in line %d is NOT in expected range of size of pills\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                        pill_Production_Line->pill_medicines[i].is_failed = 1;
+                        break;
+                    }
+                }
+            }
+
+            printf("=====================================================================\n");
+            fflush(stdout);
+
+            // print the inspection results
+            printf("Inspection results:\n");
+            // if the inspection is successful , print that is good , if not create a varaible to add the number of mdedicines that are missing that missed
+            printf("Pill production line %d inspection is successful\n", pill_Production_Line->num);
+
+            fflush(stdout);
+        }
+    }
 }

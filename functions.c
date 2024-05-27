@@ -14,7 +14,7 @@ int range_size_pill[2] = {1, 5};
 int range_color_pill[2] = {1, 5};
 int range_expected_liquid_medicine_level[2] = {1, 5};
 int range_expected_liquid_medicine_color[2] = {1, 5};
-int range_expected_pill_medicine_level[2] = {1, 5};
+int range_expected_pill_medicine_size[2] = {1, 5};
 int range_expected_pill_medicine_color[2] = {1, 5};
 
 int threshold_of_num_liquid_medicines_produced = 100;

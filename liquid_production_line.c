@@ -6,7 +6,8 @@ void getInformation(char **argv);
 void init_signals_handlers();
 void employee(void *args);
 void createLiquidMedicines(Liquid_Production_Line *liquid_production_line);
-void inspect_medicine(Liquid_Medicine *liquid_medicines, int num_medicines);
+void inspect_medicine(Liquid_Medicine *liquid_medicines);
+void package_medcine(Liquid_Medicine *liquid_medicines, int num_medicines);
 //***********************************************************************************
 int production_line_num;
 int num_of_liquid_production_lines;
@@ -137,21 +138,19 @@ void init_signals_handlers()
 void employee(void *args)
 {
     int *emp_id = (int *)args;
-    printf("Employee %d in liquid line %d: started working\n", *emp_id, liquid_production_line->num);
 
     while (1)
     {
         sem_wait(&mutex);
         // inspect the medicine
-        inspect_medicine(liquid_production_line->liquid_medicines, liquid_production_line->num_medicines);
+        printf("Employee %d in liquid line %d doing inspect task\n", *emp_id, liquid_production_line->num);
+        inspect_medicine(liquid_production_line->liquid_medicines);
 
-        printf("i'm %d doing the task one\n", *emp_id);
-        sleep(3);
-        sem_wait(&mutex);
-        // Todo2: code the packaging the medicine
-
-        printf("i'm %d done task 1\n", *emp_id);
-        sleep(2);
+        printf("Employee %d in liquid line %d doing package task\n", *emp_id, liquid_production_line->num);
+        // packaging the medicines
+        // package_medicine(liquid_production_line->liquid_medicines, liquid_production_line->num_medicines);
+        sem_post(&mutex);
+        break;
     }
 }
 
@@ -165,7 +164,11 @@ void createLiquidMedicines(Liquid_Production_Line *liquid_production_line)
         liquid_production_line->liquid_medicines[i].color = get_random_number(range_color_liq_medicine[0], range_color_liq_medicine[1]);
         liquid_production_line->liquid_medicines[i].is_sealed = get_random_number(0, 1);
         liquid_production_line->liquid_medicines[i].is_label_placed = get_random_number(0, 1);
+        liquid_production_line->liquid_medicines[i].is_inspected = 0;
+        liquid_production_line->liquid_medicines[i].is_packaged = 0;
+        liquid_production_line->liquid_medicines[i].is_failed = 0;
     }
+
     // print the liquid medicines
     for (int i = 0; i < liquid_production_line->num_medicines; i++)
     {
@@ -176,14 +179,15 @@ void createLiquidMedicines(Liquid_Production_Line *liquid_production_line)
     fflush(stdout);
 }
 
-void inspect_medicine(Liquid_Medicine *liquid_medicines, int num_medicines)
+void inspect_medicine(Liquid_Medicine *liquid_medicines)
 {
-    for (int i = 0; i < num_medicines; i++)
+    for (int i = 0; i < liquid_production_line->num_medicines; i++)
     {
         if (liquid_medicines[i].is_inspected == 0)
         {
             printf("Liquid Medicine %d in line %d is inspecting\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
             liquid_medicines[i].is_inspected = 1;
+            sleep(3); // sleep for 3 seconds to simulate the inspection process
             if (liquid_medicines[i].level >= range_expected_liq_medicine_level[0] && liquid_medicines[i].level <= range_expected_liq_medicine_level[1])
             {
                 printf("Liquid Medicine %d in line %d is in expected range of level\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
@@ -228,6 +232,20 @@ void inspect_medicine(Liquid_Medicine *liquid_medicines, int num_medicines)
                 break;
             }
             printf("Liquid Medicine %d in line %d is passed the inspected successfully\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+        }
+    }
+}
+
+void package_medcine(Liquid_Medicine *liquid_medicines, int num_medicines)
+{
+    for (int i = 0; i < num_medicines; i++)
+    {
+        if (liquid_medicines[i].is_packaged == 0)
+        {
+            printf("Liquid Medicine %d in line %d is packaging\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+            liquid_medicines[i].is_packaged = 1;
+            sleep(3); // sleep for 3 seconds to simulate the packaging process
+            printf("Liquid Medicine %d in line %d is packaged successfully\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
         }
     }
 }

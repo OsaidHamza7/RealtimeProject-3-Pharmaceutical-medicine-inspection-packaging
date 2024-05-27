@@ -101,6 +101,8 @@ typedef struct Pill_Medicine
     int production_line_num;
     int num_plastic_containers;
     Plastic_Container plastic_containers[MAX_NUM_PLASTIC_CONTAINERS];
+    bool is_inspected;
+    bool is_failed;
     int Expiry_date;
 } Pill_Medicine;
 
@@ -139,6 +141,8 @@ extern int range_size_pill[2];
 extern int range_color_pill[2];
 extern int range_expected_liquid_medicine_level[2];
 extern int range_expected_liquid_medicine_color[2];
+extern int range_expected_pill_medicine_color[2];
+extern int range_expected_pill_medicine_size[2];
 // thresholds
 extern int threshold_of_num_liquid_medicines_produced;
 extern int threshold_of_num_pill_medicines_produced;
