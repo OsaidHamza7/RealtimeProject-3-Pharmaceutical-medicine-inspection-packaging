@@ -86,9 +86,9 @@ int main(int argc, char **argv)
     alarm(simulation_threshold_time);
 
     //  create the GUI
-    createGUI();
+    //createGUI();
     createLiquidProductionLines();
-    createPillProductionLines();
+    //createPillProductionLines();
 
     while (1)
     {
@@ -163,6 +163,7 @@ void createLiquidProductionLines()
             pids_liquid_production_lines[i] = pid;
             break;
         }
+        sleep(1);
     }
 }
 
@@ -313,8 +314,8 @@ void exitProgram()
 
     // kill all the child processes
     killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
-    killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
-    killAllProcesses(pid_gui, 1);
+    //killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
+    //killAllProcesses(pid_gui, 1);
     printf("All child processes killed\n");
 
     printf("Cleaning up IPC resources...\n");

@@ -5,6 +5,7 @@
 void getInformation(char **argv);
 void init_signals_handlers();
 void employee(void *args);
+void createLiquidMedicines(Liquid_Production_Line *liquid_production_line);
 //***********************************************************************************
 int production_line_num;
 int num_of_liquid_production_lines;
@@ -35,28 +36,30 @@ int main(int argc, char **argv)
     production_line_num = atoi(argv[1]);
     num_of_liquid_production_lines = atoi(argv[2]);
 
-    // // Open a shared memories
+    // Open a shared memories
     shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_of_liquid_production_lines * sizeof(struct Liquid_Production_Line), "liquid_production_line.c");
     liquid_production_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
 
-    // // Open the semaphores
+    // Open the semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");
     // 0 :shared between threads 1 :shared between process
 
     // get information from the arguments
     getInformation(argv);
 
-    // Todo1: create the liquid medicines
+    // create the liquid medicines
+    createLiquidMedicines(liquid_production_line);
 
     sem_init(&mutex, 0, 1);
+
     // creats threads for employees
     pthread_t employees[num_of_liquid_production_lines];
-
     int employee_id[num_employees];
+
     // create thread for each employee
     for (int i = 0; i < num_of_liquid_production_lines; i++)
     {
-        employee_id[i] = i;
+        employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
     }
 
@@ -85,6 +88,8 @@ void getInformation(char **argv)
     split_string(argv[7], range_color_liq_medicine);
 
     printf("=====================================================================\n");
+    fflush(stdout);
+
     // print all arguments
     printf("production_line_num: %d\n", production_line_num);
     printf("num_of_liquid_production_lines: %d\n", num_of_liquid_production_lines);
@@ -113,7 +118,6 @@ void getInformation(char **argv)
 
 void init_signals_handlers()
 {
-
     /*if (sigset(SIGCLD, signal_handler) == -1)
     { // set the signal handler for SIGINT
         perror("Signal Error\n");
@@ -130,14 +134,35 @@ void employee(void *args)
     while (1)
     {
         sem_wait(&mutex);
-        // Todo2: code the inspects the medicine
+        // Todo1: code the inspects the medicine
 
         printf("i'm %d doing the task one\n", *emp_id);
         sleep(3);
         sem_wait(&mutex);
-        // Todo3: code the packaging the medicine
+        // Todo2: code the packaging the medicine
 
         printf("i'm %d done task 1\n", *emp_id);
         sleep(2);
     }
+}
+
+void createLiquidMedicines(Liquid_Production_Line *liquid_production_line)
+{
+    for (int i = 0; i < liquid_production_line->num_medicines; i++)
+    {
+        liquid_production_line->liquid_medicines[i].id = i + 1;
+        liquid_production_line->liquid_medicines[i].production_line_num = liquid_production_line->num;
+        liquid_production_line->liquid_medicines[i].level = get_random_number(range_level_liq_medicine[0], range_level_liq_medicine[1]);
+        liquid_production_line->liquid_medicines[i].color = get_random_number(range_color_liq_medicine[0], range_color_liq_medicine[1]);
+        liquid_production_line->liquid_medicines[i].is_sealed = get_random_number(0, 1);
+        liquid_production_line->liquid_medicines[i].is_label_placed = get_random_number(0, 1);
+    }
+    // print the liquid medicines
+    for (int i = 0; i < liquid_production_line->num_medicines; i++)
+    {
+        printf("Liquid Medicine %d is created with level %d, color %d, is_sealed %d, is_label_placed %d\n", liquid_production_line->liquid_medicines[i].id, liquid_production_line->liquid_medicines[i].level, liquid_production_line->liquid_medicines[i].color, liquid_production_line->liquid_medicines[i].is_sealed, liquid_production_line->liquid_medicines[i].is_label_placed);
+        fflush(stdout);
+    }
+    printf("=====================================================================\n");
+    fflush(stdout);
 }

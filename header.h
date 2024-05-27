@@ -67,7 +67,6 @@ struct String
     char str[MAX_LINE_LENGTH];
 };
 
-
 typedef struct Pill
 {
     int id;
@@ -85,7 +84,7 @@ typedef struct Plastic_Container
 typedef struct Liquid_Medicine
 {
     int id;
-    int production_line_id;
+    int production_line_num;
     int level;
     int color;
     bool is_sealed;
@@ -118,8 +117,8 @@ typedef struct Liquid_Production_Line
     int num;
     int num_employes;
     int num_medicines;
-    Liquid_Medicine liquid_medicines[MAX_NUM_LIQUID_MEDICINES];
     int speed;
+    Liquid_Medicine liquid_medicines[MAX_NUM_LIQUID_MEDICINES];
 } Liquid_Production_Line;
 
 // ===================================================================================
