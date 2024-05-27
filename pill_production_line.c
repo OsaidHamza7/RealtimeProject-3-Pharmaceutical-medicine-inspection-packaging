@@ -8,7 +8,6 @@ void init_signals_handlers();
 void employee(void *args);
 void createPillMedicines(Pill_Production_Line *pill_production_line);
 
-
 //***********************************************************************************
 
 int production_line_num;
@@ -153,34 +152,36 @@ void employee(void *args)
 }
 void createPillMedicines(Pill_Production_Line *pill_Production_Line)
 {
-    for (int i = 0; i  < pill_Production_Line->num_medicines; i++)
+    for (int i = 0; i < pill_Production_Line->num_medicines; i++)
     {
         pill_Production_Line->pill_medicines[i].id = i + 1;
         pill_Production_Line->pill_medicines[i].production_line_num = pill_Production_Line->num;
         pill_Production_Line->pill_medicines[i].num_plastic_containers = get_random_number(range_of_plastic_containers[0], range_of_plastic_containers[1]);
-        for(int j=0; j<  pill_Production_Line->pill_medicines->num_plastic_containers; j++)
+        for (int j = 0; j < pill_Production_Line->pill_medicines->num_plastic_containers; j++)
         {
-            pill_Production_Line->pill_medicines->plastic_containers[j].id= j+1;
-            pill_Production_Line->pill_medicines->plastic_containers[j].num_pills= get_random_number(range_of_pills[0],range_of_pills[1]);
-            for(int k=0; k<  pill_Production_Line->pill_medicines->plastic_containers->pills; k++)
+            pill_Production_Line->pill_medicines->plastic_containers[j].id = j + 1;
+            pill_Production_Line->pill_medicines->plastic_containers[j].num_pills = get_random_number(range_of_pills[0], range_of_pills[1]);
+            for (int k = 0; k < pill_Production_Line->pill_medicines->plastic_containers->num_pills; k++)
             {
-                pill_Production_Line->pill_medicines->plastic_containers->pills[k].id = k+1;
+                pill_Production_Line->pill_medicines->plastic_containers->pills[k].id = k + 1;
                 pill_Production_Line->pill_medicines->plastic_containers->pills[k].color = get_random_number(range_color_pill[0], range_color_pill[1]);
-                pill_Production_Line->pill_medicines->plastic_containers->pills[k].size = get_random_number(range_size_pill[0],range_size_pill[1]);
+                pill_Production_Line->pill_medicines->plastic_containers->pills[k].size = get_random_number(range_size_pill[0], range_size_pill[1]);
             }
         }
-        //pill_Production_Line->pill_medicines[i].Expiry_date=;
+        // pill_Production_Line->pill_medicines[i].Expiry_date=;
     }
     // print the liquid medicines
     for (int i = 0; i < pill_Production_Line->num_medicines; i++)
     {
-        printf("Pill Medicine %d is created with id %d, production line num %d, num plastic containers %d", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num, pill_Production_Line->pill_medicines[i].num_plastic_containers);
+        printf("Pill Medicine %d in production line num %d,with num plastic containers %d", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num, pill_Production_Line->pill_medicines[i].num_plastic_containers);
         fflush(stdout);
-        for(int j=0; j<  pill_Production_Line->pill_medicines->num_plastic_containers; j++)
+        for (int j = 0; j < pill_Production_Line->pill_medicines->num_plastic_containers; j++)
         {
-            printf("Plastic container with id %d, number of bills %d", pill_Production_Line->pill_medicines->plastic_containers[j].id,pill_Production_Line->pill_medicines->plastic_containers[j].num_pills);
-            for(int k=0; k<  pill_Production_Line->pill_medicines->plastic_containers->pills; k++){
-                printf("Pill with id %d, color %d, size %d",pill_Production_Line->pill_medicines->plastic_containers->pills[k].id,pill_Production_Line->pill_medicines->plastic_containers->pills[k].color,pill_Production_Line->pill_medicines->plastic_containers->pills[k].size);
+            printf("Plastic container with id %d, number of bills %d", pill_Production_Line->pill_medicines->plastic_containers[j].id, pill_Production_Line->pill_medicines->plastic_containers[j].num_pills);
+            for (int k = 0; k < pill_Production_Line->pill_medicines->plastic_containers->num_pills; k++)
+            {
+                printf("Pill with id %d, color %d, size %d", pill_Production_Line->pill_medicines->plastic_containers->pills[k].id, pill_Production_Line->pill_medicines->plastic_containers->pills[k].color, pill_Production_Line->pill_medicines->plastic_containers->pills[k].size);
+                fflush(stdout);
             }
         }
     }

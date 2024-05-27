@@ -6,6 +6,7 @@ void getInformation(char **argv);
 void init_signals_handlers();
 void employee(void *args);
 void createLiquidMedicines(Liquid_Production_Line *liquid_production_line);
+void inspect_medicine(Liquid_Medicine *liquid_medicines, int num_medicines);
 //***********************************************************************************
 int production_line_num;
 int num_of_liquid_production_lines;
@@ -14,6 +15,8 @@ int range_of_speed[2];
 int range_number_of_medicines[2];
 int range_level_liq_medicine[2];
 int range_color_liq_medicine[2];
+int range_expected_liq_medicine_level[2];
+int range_expected_liq_medicine_color[2];
 
 Liquid_Production_Line *liquid_production_line;
 Liquid_Production_Line *temp;
@@ -26,7 +29,7 @@ sem_t mutex;
 int main(int argc, char **argv)
 {
     // check the number of arguments
-    if (argc < 8)
+    if (argc < 10)
     {
         perror("The user should pass an argument like:production_line_num,num_of_liquid_production_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine\n");
         exit(-1);
@@ -53,18 +56,18 @@ int main(int argc, char **argv)
     sem_init(&mutex, 0, 1);
 
     // creats threads for employees
-    pthread_t employees[num_of_liquid_production_lines];
+    pthread_t employees[num_employees];
     int employee_id[num_employees];
 
     // create thread for each employee
-    for (int i = 0; i < num_of_liquid_production_lines; i++)
+    for (int i = 0; i < num_employees; i++)
     {
         employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
     }
 
     // wait for the threads to finish
-    for (int i = 0; i < num_of_liquid_production_lines; i++)
+    for (int i = 0; i < num_employees; i++)
     {
         pthread_join(employees[i], NULL);
     }
@@ -86,6 +89,8 @@ void getInformation(char **argv)
     split_string(argv[5], range_of_speed);
     split_string(argv[6], range_level_liq_medicine);
     split_string(argv[7], range_color_liq_medicine);
+    split_string(argv[8], range_expected_liq_medicine_level);
+    split_string(argv[9], range_expected_liq_medicine_color);
 
     printf("=====================================================================\n");
     fflush(stdout);
@@ -99,6 +104,9 @@ void getInformation(char **argv)
 
     printf("range_level_liquid_medicine: %d - %d\n", range_level_liq_medicine[0], range_level_liq_medicine[1]);
     printf("range_color_liquid_medicine: %d - %d\n\n", range_color_liq_medicine[0], range_color_liq_medicine[1]);
+
+    printf("range_expected_liquid_medicine_level: %d - %d\n", range_expected_liq_medicine_level[0], range_expected_liq_medicine_level[1]);
+    printf("range_expected_liquid_medicine_color: %d - %d\n", range_expected_liq_medicine_color[0], range_expected_liq_medicine_color[1]);
 
     acquireSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
@@ -129,12 +137,14 @@ void employee(void *args)
 {
     int *emp_id = (int *)args;
 
-    printf("Employee %d: started working\n", *emp_id);
+    printf("Employee %d in liquid line %d: started working\n", *emp_id, liquid_production_line->num);
 
     while (1)
     {
         sem_wait(&mutex);
         // Todo1: code the inspects the medicine
+        // function to inspect the medicine
+        inspect_medicine(liquid_production_line->liquid_medicines, liquid_production_line->num_medicines);
 
         printf("i'm %d doing the task one\n", *emp_id);
         sleep(3);
@@ -165,4 +175,59 @@ void createLiquidMedicines(Liquid_Production_Line *liquid_production_line)
     }
     printf("=====================================================================\n");
     fflush(stdout);
+}
+
+void inspect_medicine(Liquid_Medicine *liquid_medicines, int num_medicines)
+{
+    int j = 0;
+
+    for (int i = 0; i < num_medicines; i++)
+    {
+        j = 0;
+        if (liquid_medicines[i].is_inspected == 0)
+        {
+            printf("Medicine %d in line %d is inspectting\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+
+            if (liquid_medicines[i].level >= range_expected_liq_medicine_level[0] && liquid_medicines[i].level <= range_expected_liq_medicine_level[1])
+            {
+                printf("Medicine %d in line %d is in expected range of level\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+                j++;
+            }
+            else
+            {
+                printf("Medicine %d in line %d is NOT in expected range of level\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+            }
+
+            if (liquid_medicines[i].color >= range_expected_liq_medicine_color[0] && liquid_medicines[i].color <= range_expected_liq_medicine_color[1])
+            {
+                printf("Medicine %d in line %d is in expected range of color\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+                j++;
+            }
+            else
+            {
+                printf("Medicine %d in line %d is NOT in expected range of color\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+            }
+
+            if (liquid_medicines[i].is_sealed == 1)
+            {
+                printf("Medicine %d in line %d is sealed\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+                j++;
+            }
+
+            else
+            {
+                printf("Medicine %d in line %d is NOT sealed\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+            }
+
+            if (liquid_medicines[i].is_label_placed == 1)
+            {
+                printf("Medicine %d in line %d is labeled\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+                j++;
+            }
+            else
+            {
+                printf("Medicine %d in line %d is NOT labeled\n", liquid_medicines[i].id, liquid_medicines[i].production_line_num);
+            }
+        }
+    }
 }

@@ -12,6 +12,10 @@ int range_level_liquid_medicine[2] = {1, 5};
 int range_color_liquid_medicine[2] = {1, 5};
 int range_size_pill[2] = {1, 5};
 int range_color_pill[2] = {1, 5};
+int range_expected_liquid_medicine_level[2] = {1, 5};
+int range_expected_liquid_medicine_color[2] = {1, 5};
+int range_expected_pill_medicine_level[2] = {1, 5};
+int range_expected_pill_medicine_color[2] = {1, 5};
 
 int threshold_of_num_liquid_medicines_produced = 100;
 int threshold_of_num_pill_medicines_produced = 100;
@@ -101,6 +105,16 @@ void readFromFile(const char *filename, int *array)
         {
             range_color_pill[0] = min;
             range_color_pill[1] = max;
+        }
+        else if (strcmp(varName, "range_expected_liquid_medicine_level") == 0)
+        {
+            range_expected_liquid_medicine_level[0] = min;
+            range_expected_liquid_medicine_level[1] = max;
+        }
+        else if (strcmp(varName, "range_expected_liquid_medicine_color") == 0)
+        {
+            range_expected_liquid_medicine_color[0] = min;
+            range_expected_liquid_medicine_color[1] = max;
         }
     }
     fclose(file); // closing the file

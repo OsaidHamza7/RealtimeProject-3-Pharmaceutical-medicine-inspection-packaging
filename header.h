@@ -89,6 +89,8 @@ typedef struct Liquid_Medicine
     int color;
     bool is_sealed;
     bool is_label_placed;
+    bool is_inspected;
+    bool is_packaged;
     int expiry_date;
 } Liquid_Medicine;
 
@@ -134,7 +136,8 @@ extern int range_level_liquid_medicine[2];
 extern int range_color_liquid_medicine[2];
 extern int range_size_pill[2];
 extern int range_color_pill[2];
-
+extern int range_expected_liquid_medicine_level[2];
+extern int range_expected_liquid_medicine_color[2];
 // thresholds
 extern int threshold_of_num_liquid_medicines_produced;
 extern int threshold_of_num_pill_medicines_produced;

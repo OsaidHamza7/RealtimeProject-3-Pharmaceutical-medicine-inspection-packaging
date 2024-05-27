@@ -1,5 +1,5 @@
-num_liquid_production_lines 0
-num_pill_production_lines 1
+num_liquid_production_lines 5
+num_pill_production_lines 5
 num_employees 2
 range_speed_lines 3,4
 range_of_liquid_medicines 5,6
@@ -15,3 +15,5 @@ threshold_of_num_pill_medicines_produced 21
 threshold_of_num_liquid_medicines_failed 22
 threshold_of_num_pill_medicines_failed 23
 simulation_threshold_time 24
+range_expected_liquid_medicine_level 10,20
+range_expected_liquid_medicine_color 10,20
