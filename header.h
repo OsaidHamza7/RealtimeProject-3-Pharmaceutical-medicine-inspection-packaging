@@ -91,6 +91,7 @@ typedef struct Liquid_Medicine
     bool is_label_placed;
     bool is_inspected;
     bool is_packaged;
+    bool is_failed;
     int expiry_date;
 } Liquid_Medicine;
 

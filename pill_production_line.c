@@ -55,21 +55,22 @@ int main(int argc, char **argv)
     getInformation(argv);
 
     // Todo1: create the liquid medicines
+    createPillMedicines(pill_production_line);
 
     sem_init(&mutex, 0, 1);
     // creats threads for employees
-    pthread_t employees[num_of_pill_production_lines];
+    pthread_t employees[num_employees];
 
     int employee_id[num_employees];
     // create thread for each employee
-    for (int i = 0; i < num_of_pill_production_lines; i++)
+    for (int i = 0; i < num_employees; i++)
     {
         employee_id[i] = i;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
     }
 
     // wait for the threads to finish
-    for (int i = 0; i < num_of_pill_production_lines; i++)
+    for (int i = 0; i < num_employees; i++)
     {
         pthread_join(employees[i], NULL);
     }
@@ -150,8 +151,10 @@ void employee(void *args)
         sleep(2);
     }
 }
+
 void createPillMedicines(Pill_Production_Line *pill_Production_Line)
 {
+    // create the pill medicines
     for (int i = 0; i < pill_Production_Line->num_medicines; i++)
     {
         pill_Production_Line->pill_medicines[i].id = i + 1;
@@ -170,6 +173,7 @@ void createPillMedicines(Pill_Production_Line *pill_Production_Line)
         }
         // pill_Production_Line->pill_medicines[i].Expiry_date=;
     }
+
     // print the liquid medicines
     for (int i = 0; i < pill_Production_Line->num_medicines; i++)
     {
