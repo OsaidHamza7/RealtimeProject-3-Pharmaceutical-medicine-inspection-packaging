@@ -179,6 +179,9 @@ void createPillMedicines(Pill_Production_Line *pill_Production_Line)
         for(int j=0; j<  pill_Production_Line->pill_medicines->num_plastic_containers; j++)
         {
             printf("Plastic container with id %d, number of bills %d", pill_Production_Line->pill_medicines->plastic_containers[j].id,pill_Production_Line->pill_medicines->plastic_containers[j].num_pills);
+            for(int k=0; k<  pill_Production_Line->pill_medicines->plastic_containers->pills; k++){
+                printf("Pill with id %d, color %d, size %d",pill_Production_Line->pill_medicines->plastic_containers->pills[k].id,pill_Production_Line->pill_medicines->plastic_containers->pills[k].color,pill_Production_Line->pill_medicines->plastic_containers->pills[k].size);
+            }
         }
     }
     printf("=====================================================================\n");
