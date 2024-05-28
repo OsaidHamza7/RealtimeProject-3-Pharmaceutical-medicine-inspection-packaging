@@ -116,6 +116,16 @@ void readFromFile(const char *filename, int *array)
             range_expected_liquid_medicine_color[0] = min;
             range_expected_liquid_medicine_color[1] = max;
         }
+        else if (strcmp(varName, "range_expected_pill_medicine_size") == 0)
+        {
+            range_expected_pill_medicine_size[0] = min;
+            range_expected_pill_medicine_size[1] = max;
+        }
+        else if (strcmp(varName, "range_expected_pill_medicine_color") == 0)
+        {
+            range_expected_pill_medicine_color[0] = min;
+            range_expected_pill_medicine_color[1] = max;
+        }
     }
     fclose(file); // closing the file
 }

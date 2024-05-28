@@ -291,11 +291,6 @@ void display()
             // float productX = 50 + i * LINE_SPACING;
             // float productY = 500.0 - j * 80;
 
-            if (j > MEDICINES_PER_LINE - 1)
-            {
-                break;
-            }
-
             if (liquid_lines[i].liquid_medicines[j].is_failed == 1)
             {
                 continue;
@@ -303,8 +298,12 @@ void display()
 
             float productX = x;
             float productY = 500.0 - k * 80;
+            if (k > MEDICINES_PER_LINE - 1)
+            {
+                break;
+            }
             k++;
-            printf("Liquid Medicine %d in line %d ProductX: %f, ProductY: %f\n", j, i, productX, productY);
+            // printf("Liquid Medicine %d level %d in line %d ProductX: %f, ProductY: %f\n", j, liquid_lines[i].liquid_medicines[j].level, i, productX, productY);
             drawLiquidBottle(productX, productY, (liquid_lines[i].liquid_medicines[j].level % 41) + 10);
         }
 

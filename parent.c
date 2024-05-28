@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     // set an alarm for the simulation threshold time
     alarm(simulation_threshold_time);
 
-    //  create the GUI
+    // create the GUI
     createGUI();
     createLiquidProductionLines();
     // createPillProductionLines();
@@ -353,6 +353,7 @@ void thresholds_monitoring()
 
     pthread_exit(0);
 }
+
 void getArguments(int *numberArray)
 {
     num_liquid_production_lines = numberArray[0];

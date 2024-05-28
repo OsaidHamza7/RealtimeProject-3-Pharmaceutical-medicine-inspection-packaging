@@ -20,7 +20,7 @@ int range_expected_liq_medicine_level[2];
 int range_expected_liq_medicine_color[2];
 int number_of_employees;
 int is_there_sucess_inspected_medicine = 0;
-
+int max_produce_time = 10;
 Liquid_Production_Line *liquid_production_line;
 Liquid_Production_Line *temp;
 Liquid_Production_Line *liquid_production_lines;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
     int employee_id[number_of_employees];
 
     // create thread for each employee
-    /*for (int i = 0; i < number_of_employees; i++)
+    for (int i = 0; i < number_of_employees; i++)
     {
         employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     {
         pthread_join(employees[i], NULL);
     }
-*/
+
     pthread_join(create_liquid_medicine_thread, NULL);
     // while (1)
     // {
@@ -151,34 +151,39 @@ void employee(void *args)
     {
         // inspect the uninspected medicines
         sem_wait(&mutex_liquid_midicines);
-        printf("Employee %d in liquid line %d doing inspect task\n", *emp_id, liquid_production_line->num);
+        printf("Employee %d in liquid line %d go to take a new medicine\n", *emp_id, liquid_production_line->num);
         int index_medicine = get_index_of_uninspected_medicine(liquid_production_line->liquid_medicines);
         sem_post(&mutex_liquid_midicines);
 
-        if (index_medicine == -1) // there is no uninspected medicines
+        // there is no medicines to inspect
+        if (index_medicine == -1)
         {
-            printf("Liquid line %d has no uninspected medicines\n", liquid_production_line->num);
+            printf("Liquid line %d has no medicines\n", liquid_production_line->num);
             sleep(1);
             continue;
         }
 
+        printf("Employee %d in liquid line %d inspects the medicine %d\n", *emp_id, liquid_production_line->num, index_medicine + 1);
         int j = inspect_medicine(liquid_production_line->liquid_medicines, index_medicine);
-        sleep(3); // sleep for 3 seconds to simulate the inspection process
+        sleep(5); // sleep for 3 seconds to simulate the inspection process
 
-        if (j == 0) // the inspection is failed
+        // the inspection for this medicine is failed
+        if (j == 0)
         {
             printf("Liquid Medicine %d in line %d is failed\n", liquid_production_line->liquid_medicines[index_medicine].id, liquid_production_line->liquid_medicines[index_medicine].production_line_num);
             liquid_production_line->liquid_medicines[index_medicine].is_failed = 1;
             continue;
         }
+        printf("Liquid Medicine %d in line %d is passed the inspection successfully\n", liquid_production_line->liquid_medicines[index_medicine].id, liquid_production_line->liquid_medicines[index_medicine].production_line_num);
 
         // the inspection is successful go to the packaging
         // packaging the medicines
 
-        printf("Employee %d in liquid line %d doing package task\n", *emp_id, liquid_production_line->num);
+        /*printf("Employee %d in liquid line %d doing package task\n", *emp_id, liquid_production_line->num);
         package_medcine(liquid_production_line->liquid_medicines, index_medicine);
         sleep(3); // sleep for 3 seconds to simulate the packaging process
         printf("Liquid Medicine %d in line %d is packaged successfully\n", liquid_production_line->liquid_medicines[index_medicine].id, liquid_production_line->num);
+        */
     }
 }
 
@@ -187,6 +192,9 @@ void createLiquidMedicines()
     int j = 0;
     while (1)
     {
+        int time = max_produce_time - (liquid_production_line->speed * max_produce_time) / 100;
+        time = (time < 2) ? 2 : time;
+        sleep(time); // sleep for some seconds to simulate the production of the medicines
         acquireSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
         liquid_production_line->liquid_medicines[j].id = j + 1;
@@ -201,9 +209,9 @@ void createLiquidMedicines()
 
         releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
+        // create the medicine successfully
         printf("Created Liquid Medicine %d in line %d with level %d, color %d, is_sealed %d, is_label_placed %d\n", liquid_production_line->liquid_medicines[j].id, liquid_production_line->num, liquid_production_line->liquid_medicines[j].level, liquid_production_line->liquid_medicines[j].color, liquid_production_line->liquid_medicines[j].is_sealed, liquid_production_line->liquid_medicines[j].is_label_placed);
         fflush(stdout);
-        sleep(3);
         j++;
     }
 }
@@ -224,50 +232,48 @@ int get_index_of_uninspected_medicine(Liquid_Medicine *liquid_medicines)
 
 int inspect_medicine(Liquid_Medicine *liquid_medicines, int index_medicine)
 {
-    while (1)
+
+    if (liquid_medicines[index_medicine].level >= range_expected_liq_medicine_level[0] && liquid_medicines[index_medicine].level <= range_expected_liq_medicine_level[1])
     {
-        if (liquid_medicines[index_medicine].level >= range_expected_liq_medicine_level[0] && liquid_medicines[index_medicine].level <= range_expected_liq_medicine_level[1])
-        {
-            printf("Liquid Medicine %d in line %d is in expected range of level\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-        }
-        else
-        {
-            printf("Liquid Medicine %d in line %d is NOT in expected range of level\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-            return 0;
-        }
-
-        if (liquid_medicines[index_medicine].color >= range_expected_liq_medicine_color[0] && liquid_medicines[index_medicine].color <= range_expected_liq_medicine_color[1])
-        {
-            printf("Liquid Medicine %d in line %d is in expected range of color\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-        }
-        else
-        {
-            printf("Liquid Medicine %d in line %d is NOT in expected range of color\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-            return 0;
-        }
-
-        if (liquid_medicines[index_medicine].is_sealed == 1)
-        {
-            printf("Liquid Medicine %d in line %d is sealed\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-        }
-        else
-        {
-            printf("Liquid Medicine %d in line %d is NOT sealed\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-            return 0;
-        }
-
-        if (liquid_medicines[index_medicine].is_label_placed == 1)
-        {
-            printf("Liquid Medicine %d in line %d is labeled\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-        }
-        else
-        {
-            printf("Liquid Medicine %d in line %d is NOT labeled\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-            return 0;
-        }
-        printf("Liquid Medicine %d in line %d is passed the inspected successfully\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
-        return 1;
+        // printf("Liquid Medicine %d in line %d is in expected range of level\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
     }
+    else
+    {
+        // printf("Liquid Medicine %d in line %d is NOT in expected range of level\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+        return 0;
+    }
+
+    if (liquid_medicines[index_medicine].color >= range_expected_liq_medicine_color[0] && liquid_medicines[index_medicine].color <= range_expected_liq_medicine_color[1])
+    {
+        // printf("Liquid Medicine %d in line %d is in expected range of color\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+    }
+    else
+    {
+        // printf("Liquid Medicine %d in line %d is NOT in expected range of color\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+        return 0;
+    }
+
+    if (liquid_medicines[index_medicine].is_sealed == 1)
+    {
+        // printf("Liquid Medicine %d in line %d is sealed\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+    }
+    else
+    {
+        // printf("Liquid Medicine %d in line %d is NOT sealed\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+        return 0;
+    }
+
+    if (liquid_medicines[index_medicine].is_label_placed == 1)
+    {
+        // printf("Liquid Medicine %d in line %d is labeled\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+    }
+    else
+    {
+        // printf("Liquid Medicine %d in line %d is NOT labeled\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+        return 0;
+    }
+    // printf("Liquid Medicine %d in line %d is passed the inspected successfully\n", liquid_medicines[index_medicine].id, liquid_medicines[index_medicine].production_line_num);
+    return 1;
 }
 
 void package_medcine(Liquid_Medicine *liquid_medicines, int index_medicine)

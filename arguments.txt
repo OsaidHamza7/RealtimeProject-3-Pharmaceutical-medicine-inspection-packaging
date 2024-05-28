@@ -1,6 +1,6 @@
-num_liquid_production_lines 2
-num_pill_production_lines 5
-num_employees 2
+num_liquid_production_lines 4
+num_pill_production_lines 4
+num_employees 3
 range_speed_lines 50,100
 range_of_liquid_medicines 2,5
 range_of_pill_medicines 2,5
