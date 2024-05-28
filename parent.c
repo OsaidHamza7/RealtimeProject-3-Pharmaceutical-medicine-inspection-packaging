@@ -18,6 +18,7 @@ void exitProgram();
 void createGUI();
 void createLiquidProductionLines();
 void createPillProductionLines();
+void thresholds_monitoring();
 //***********************************************************************************
 int arr_of_arguments[MAX_LINES];
 int is_alarmed = 0;
@@ -62,11 +63,21 @@ char str_range_expected_color_pill[20];
 // shared memories for struct of processes
 char *shmptr_liquid_production_lines;
 char *shmptr_pill_production_lines;
+char *shmptr_num_liquid_medicines_produced;
+char *shmptr_num_pill_medicines_produced;
+char *shmptr_num_liquid_medicines_failed;
+char *shmptr_num_pill_medicines_failed;
 // shared memories for thresholds
 
 // semaphores
 int sem_liquid_production_lines;
 int sem_pill_production_lines;
+int sem_num_liquid_medicines_produced;
+int sem_num_pill_medicines_produced;
+int sem_num_liquid_medicines_failed;
+int sem_num_pill_medicines_failed;
+
+pthread_t thresholds_monitoring_thread;
 
 int main(int argc, char **argv)
 {
@@ -88,27 +99,39 @@ int main(int argc, char **argv)
     // initialize IPCs resources (shared memory, semaphores, message queues)
     initializeIPCResources();
     init_signals_handlers();
+
+    // craete a monitoring thread to keep track of the thresholds
+    pthread_create(&thresholds_monitoring_thread, NULL, (void *)thresholds_monitoring, NULL);
+
+    // set an alarm for the simulation threshold time
     alarm(simulation_threshold_time);
 
     //  create the GUI
     // createGUI();
-    // createLiquidProductionLines();
-    createPillProductionLines();
+    createLiquidProductionLines();
+    // createPillProductionLines();
 
-    while (1)
-    {
-        pause();
-        is_end = 0;
-        if (is_alarmed)
-        {
-            printf("The trishold time is reached, the program is finished.\n\n");
-            is_end = 1;
-        }
-        if (is_end)
-        {
-            break;
-        }
-    }
+    /*
+    join the monitoring thread to the main thread to keep the program
+    running and stop it when one of the thresholds is reached
+    */
+
+    // while (1)
+    // {
+    //     pause();
+    //     is_end = 0;
+    //     if (is_alarmed)
+    //     {
+    //         printf("The trishold time is reached, the program is finished.\n\n");
+    //         is_end = 1;
+    //     }
+    //     if (is_end)
+    //     {
+    //         break;
+    //     }
+    // }
+
+    pthread_join(thresholds_monitoring_thread, NULL);
 
     exitProgram();
 
@@ -143,7 +166,6 @@ void createLiquidProductionLines()
     {
         switch (pid = fork())
         {
-
         case -1: // Fork Failed
             perror("Error:Fork Liquid Production Line Failed.\n");
             exit(1);
@@ -153,16 +175,15 @@ void createLiquidProductionLines()
             sprintf(production_line_num, "%d", i + 1);
             sprintf(num_of_liquid_production_lines, "%d", num_liquid_production_lines);
             sprintf(str_num_employees, "%d", num_employees);
-            sprintf(str_range_num_midicines, "%d %d", range_of_liquid_medicines[0], range_of_liquid_medicines[1]);
             sprintf(str_range_of_speeds, "%d %d", range_speed_lines[0], range_speed_lines[1]);
 
             sprintf(str_range_level_liquid_medicine, "%d %d", range_level_liquid_medicine[0], range_level_liquid_medicine[1]);
             sprintf(str_range_color_liquid_medicine, "%d %d", range_color_liquid_medicine[0], range_color_liquid_medicine[1]);
 
-            sprintf(str_range_expected_level, " %d %d", range_expected_liquid_medicine_level[0], range_expected_liquid_medicine_level[1]);
-            sprintf(str_range_expected_color, " %d %d", range_expected_liquid_medicine_color[0], range_expected_liquid_medicine_color[1]);
+            sprintf(str_range_expected_level, "%d %d", range_expected_liquid_medicine_level[0], range_expected_liquid_medicine_level[1]);
+            sprintf(str_range_expected_color, "%d %d", range_expected_liquid_medicine_color[0], range_expected_liquid_medicine_color[1]);
 
-            execlp("./liquid_production_line", "liquid_production_line", production_line_num, num_of_liquid_production_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine, str_range_expected_level, str_range_expected_color, NULL);
+            execlp("./liquid_production_line", "liquid_production_line", production_line_num, num_of_liquid_production_lines, str_num_employees, str_range_of_speeds, str_range_level_liquid_medicine, str_range_color_liquid_medicine, str_range_expected_level, str_range_expected_color, NULL);
             perror("Error:Execute Liquid Production Line Failed.\n");
             exit(1);
             break;
@@ -250,6 +271,18 @@ void initializeIPCResources()
     shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), "parent.c");
     shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), "parent.c");
 
+    shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "parent.c");
+    shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "parent.c");
+    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "parent.c");
+    shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "parent.c");
+
+    int x = 0;
+
+    memcpy(shmptr_num_pill_medicines_produced, &x, sizeof(int));
+    memcpy(shmptr_num_liquid_medicines_produced, &x, sizeof(int));
+    memcpy(shmptr_num_pill_medicines_failed, &x, sizeof(int));
+    memcpy(shmptr_num_liquid_medicines_failed, &x, sizeof(int));
+
     // Create a Shared Memories for thresholds (5 shared memories done)
     // shmptr_threshold_num_cargo_planes_crashed = createSharedMemory(SHKEY_THRESHOLD_NUM_CARGO_PLANES_CRASHED, sizeof(int), "parent.c");
 
@@ -262,8 +295,64 @@ void initializeIPCResources()
     // Create a Semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "parent.c");
     sem_pill_production_lines = createSemaphore(SEMKEY_PILL_PRODUCTION_LINES, 1, 1, "parent.c");
+
+    sem_num_liquid_medicines_produced = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_PRODUCED, 1, 1, "parent.c");
+    sem_num_pill_medicines_produced = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_PRODUCED, 1, 1, "parent.c");
+    sem_num_liquid_medicines_failed = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_FAILED, 1, 1, "parent.c");
+    sem_num_pill_medicines_failed = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_FAILED, 1, 1, "parent.c");
 }
 
+void thresholds_monitoring()
+{
+    while (!is_end)
+    {
+        // check all thresholds
+        if (is_alarmed)
+        {
+            printf("The simulation threshold time is reached, the program is finished.\n\n");
+            is_end = 1;
+        }
+        // check the threshold of number of liquid medicines produced
+        acquireSem(sem_num_liquid_medicines_produced, 0, "parent.c");
+        if (*(int *)shmptr_num_liquid_medicines_produced >= threshold_of_num_liquid_medicines_produced)
+        {
+            printf("The threshold of number of liquid medicines produced is reached, the program is finished.\n\n");
+            is_end = 1;
+        }
+        releaseSem(sem_num_liquid_medicines_produced, 0, "parent.c");
+
+        // check the threshold of number of pill medicines produced
+        acquireSem(sem_num_pill_medicines_produced, 0, "parent.c");
+        if (*(int *)shmptr_num_pill_medicines_produced >= threshold_of_num_pill_medicines_produced)
+        {
+            printf("The threshold of number of pill medicines produced is reached, the program is finished.\n\n");
+            is_end = 1;
+        }
+        releaseSem(sem_num_pill_medicines_produced, 0, "parent.c");
+
+        // check the threshold of number of liquid medicines failed
+        acquireSem(sem_num_liquid_medicines_failed, 0, "parent.c");
+        if (*(int *)shmptr_num_liquid_medicines_failed >= threshold_of_num_liquid_medicines_failed)
+        {
+            printf("The threshold of number of liquid medicines failed is reached, the program is finished.\n\n");
+            is_end = 1;
+        }
+        releaseSem(sem_num_liquid_medicines_failed, 0, "parent.c");
+
+        // check the threshold of number of pill medicines failed
+        acquireSem(sem_num_pill_medicines_failed, 0, "parent.c");
+        if (*(int *)shmptr_num_pill_medicines_failed >= threshold_of_num_pill_medicines_failed)
+        {
+            printf("The threshold of number of pill medicines failed is reached, the program is finished.\n\n");
+            is_end = 1;
+        }
+        releaseSem(sem_num_pill_medicines_failed, 0, "parent.c");
+
+        sleep(1);
+    }
+
+    pthread_exit(0);
+}
 void getArguments(int *numberArray)
 {
     num_liquid_production_lines = numberArray[0];
@@ -328,9 +417,9 @@ void exitProgram()
     fflush(stdout);
 
     // kill all the child processes
-    // killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
-    killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
-    // killAllProcesses(pid_gui, 1);
+    killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
+    // killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
+    //  killAllProcesses(pid_gui, 1);
     printf("All child processes killed\n");
 
     printf("Cleaning up IPC resources...\n");

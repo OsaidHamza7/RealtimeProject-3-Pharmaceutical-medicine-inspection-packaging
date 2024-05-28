@@ -39,17 +39,27 @@
 
 #define SHKEY_LIQUID_PRODUCTION_LINES 1111
 #define SHKEY_PILL_PRODUCTION_LINES 2222
-#define SHKEY_LIQUID_MEDICINES 3333
-#define SHKEY_PILL_MEDICINES 4444
-#define SHKEY_PLASTIC_CONTAINERS 5555
-#define SHKEY_PILLS 6666
+#define SHKEY_NUM_LIQUID_MEDICINES_PRODUCED 1234
+#define SHKEY_NUM_PILL_MEDICINES_PRODUCED 2345
+#define SHKEY_NUM_LIQUID_MEDICINES_FAILED 3456
+#define SHKEY_NUM_PILL_MEDICINES_FAILED 4567
 
 #define SEMKEY_LIQUID_PRODUCTION_LINES 7777
 #define SEMKEY_PILL_PRODUCTION_LINES 8888
-#define SEMKEY_LIQUID_MEDICINES 9999
-#define SEMKEY_PILL_MEDICINES 1010
-#define SEMKEY_PLASTIC_CONTAINERS 1111
-#define SEMKEY_PILLS 1212
+#define SEMKEY_NUM_LIQUID_MEDICINES_PRODUCED 5678
+#define SEMKEY_NUM_PILL_MEDICINES_PRODUCED 6789
+#define SEMKEY_NUM_LIQUID_MEDICINES_FAILED 7890
+#define SEMKEY_NUM_PILL_MEDICINES_FAILED 8901
+
+#define START_YEAR 2000
+#define END_YEAR 2030
+
+typedef struct Date
+{
+    int year;
+    int month;
+    int day;
+} Date;
 
 struct msgbuf
 {
@@ -78,6 +88,7 @@ typedef struct Plastic_Container
 {
     int id;
     int num_pills;
+    bool date_is_printed;
     Pill pills[MAX_NUM_PILLS];
 } Plastic_Container;
 
@@ -90,8 +101,9 @@ typedef struct Liquid_Medicine
     bool is_sealed;
     bool is_label_placed;
     bool is_inspected;
-    bool is_packaged;
     bool is_failed;
+    bool is_medicine_placed;
+    bool is_prescription_placed;
     int expiry_date;
 } Liquid_Medicine;
 
@@ -103,7 +115,9 @@ typedef struct Pill_Medicine
     Plastic_Container plastic_containers[MAX_NUM_PLASTIC_CONTAINERS];
     bool is_inspected;
     bool is_failed;
-    int Expiry_date;
+    bool prescription_is_added;
+    bool is_packaged;
+    Date Expiry_date;
 } Pill_Medicine;
 
 typedef struct Pill_Production_Line
@@ -156,5 +170,5 @@ char *trim(char *str);
 void killAllProcesses(int *arr_pid, int size);
 void split_string(char *argv, int arr[]);
 int get_random_number(int min, int max);
-
+Date generate_random_date();
 #endif

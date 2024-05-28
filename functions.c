@@ -173,3 +173,42 @@ char *trim(char *str)
 
     return str;
 }
+
+Date generate_random_date()
+{
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Generate a random year between START_YEAR and END_YEAR
+    int year = START_YEAR + rand() % (END_YEAR - START_YEAR + 1);
+
+    // Generate a random month between 1 and 12
+    int month = 1 + rand() % 12;
+
+    // Generate a random day based on the month and whether it's a leap year
+    int day;
+    switch (month)
+    {
+    case 2: // February
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))
+        {
+            day = 1 + rand() % 29; // Leap year
+        }
+        else
+        {
+            day = 1 + rand() % 28; // Non-leap year
+        }
+        break;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        day = 1 + rand() % 30; // April, June, September, November
+        break;
+    default:
+        day = 1 + rand() % 31; // January, March, May, July, August, October, December
+    }
+
+    Date random_date = {year, month, day};
+    return random_date;
+}

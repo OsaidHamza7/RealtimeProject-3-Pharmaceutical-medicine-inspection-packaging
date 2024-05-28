@@ -7,6 +7,8 @@ void getInformation(char **argv);
 void init_signals_handlers();
 void employee(void *args);
 void createPillMedicines(Pill_Production_Line *pill_production_line);
+void make_inspection(Pill_Production_Line *pill_Production_Line);
+void packaging(Pill_Production_Line *pill_Production_Line);
 
 //***********************************************************************************
 
@@ -27,7 +29,13 @@ Pill_Production_Line *temp;
 Pill_Production_Line *pill_production_lines;
 
 char *shmptr_pill_production_lines;
+char *shmptr_num_pill_medicines_produced;
+char *shmptr_num_pill_medicines_failed;
+
 int sem_pill_production_lines;
+int sem_num_pill_medicines_produced;
+int sem_num_pill_medicines_failed;
+
 sem_t mutex;
 
 int main(int argc, char **argv)
@@ -46,6 +54,9 @@ int main(int argc, char **argv)
     // Open a shared memories
     shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_of_pill_production_lines * sizeof(struct Pill_Production_Line), "pill_production_line.c");
     pill_production_lines = (struct Pill_Production_Line *)shmptr_pill_production_lines;
+
+    shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "pill_production_line.c");
+    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "pill_production_line.c");
 
     // Open the semaphores
     sem_pill_production_lines = createSemaphore(SEMKEY_PILL_PRODUCTION_LINES, 1, 1, "pill_production_line.c");
@@ -74,6 +85,14 @@ int main(int argc, char **argv)
     {
         pthread_join(employees[i], NULL);
     }
+
+    make_inspection(pill_production_line);
+    printf("The inspection stage for pill_based medicines is done.\n");
+    printf("******************************************************************\n");
+    sleep(2);
+    packaging(pill_production_line);
+    printf("The packaging stage for pill_based medicines is done.\n");
+    printf("******************************************************************\n");
 
     // while (1)
     // {
@@ -174,10 +193,14 @@ void createPillMedicines(Pill_Production_Line *pill_Production_Line)
                 pill_Production_Line->pill_medicines->plastic_containers->pills[k].size = get_random_number(range_size_pill[0], range_size_pill[1]);
             }
         }
-        // pill_Production_Line->pill_medicines[i].Expiry_date=;
+        pill_Production_Line->pill_medicines[i].Expiry_date = generate_random_date();
+        pill_Production_Line->pill_medicines[i].plastic_containers->date_is_printed = 1;
+        pill_Production_Line->pill_medicines[i].is_failed = 0;
+        pill_Production_Line->pill_medicines[i].is_inspected = 0;
+        pill_Production_Line->pill_medicines[i].is_packaged = 0;
     }
 
-    // print the liquid medicines
+    // print the pill based medicines
     for (int i = 0; i < pill_Production_Line->num_medicines; i++)
     {
         printf("Pill Medicine %d in production line num %d,with num plastic containers %d\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num, pill_Production_Line->pill_medicines[i].num_plastic_containers);
@@ -259,6 +282,18 @@ void make_inspection(Pill_Production_Line *pill_Production_Line)
                         pill_Production_Line->pill_medicines[i].is_failed = 1;
                         break;
                     }
+
+                    if (pill_Production_Line->pill_medicines[i].plastic_containers[j].date_is_printed == 0)
+                    {
+                        printf("Pill Medicine %d in line %d does NOT have an expiry date in thE back of the container\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                        pill_Production_Line->pill_medicines[i].is_failed = 1;
+                        break;
+                    }
+                    else
+                    {
+                        printf("Pill Medicine %d in line %d has an expiry date in the back of the container\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+                        fflush(stdout);
+                    }
                 }
             }
 
@@ -268,9 +303,27 @@ void make_inspection(Pill_Production_Line *pill_Production_Line)
             // print the inspection results
             printf("Inspection results:\n");
             // if the inspection is successful , print that is good , if not create a varaible to add the number of mdedicines that are missing that missed
-            printf("Pill production line %d inspection is successful\n", pill_Production_Line->num);
+            printf("Pill production line %d inspection is successful.\n", pill_Production_Line->num);
 
             fflush(stdout);
+        }
+    }
+}
+
+void packaging(Pill_Production_Line *pill_Production_Line)
+{
+    for (int i = 0; i < pill_Production_Line->num_medicines; i++)
+    {
+        if (pill_Production_Line->pill_medicines[i].is_packaged == 0)
+        {
+            printf("Pill Medicine %d in line %d is packaging\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+            pill_Production_Line->pill_medicines[i].is_packaged = 1;
+
+            printf("The folded prescriptions is added to Pill Medicine %d in line %d.\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
+            pill_Production_Line->pill_medicines[i].prescription_is_added = 1;
+
+            sleep(3); // sleep for 3 seconds to simulate the packaging process for pill medicines
+            printf("Pill Medicine %d in line %d is packaged successfully\n", pill_Production_Line->pill_medicines[i].id, pill_Production_Line->pill_medicines[i].production_line_num);
         }
     }
 }
