@@ -67,6 +67,8 @@ char *shmptr_num_liquid_medicines_produced;
 char *shmptr_num_pill_medicines_produced;
 char *shmptr_num_liquid_medicines_failed;
 char *shmptr_num_pill_medicines_failed;
+char *shmptr_num_liquid_medicines_packaged;
+
 // shared memories for thresholds
 
 // semaphores
@@ -271,10 +273,12 @@ void initializeIPCResources()
     shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), "parent.c");
     shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), "parent.c");
 
-    shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "parent.c");
     shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "parent.c");
-    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "parent.c");
     shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "parent.c");
+    shmptr_num_liquid_medicines_packaged = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PACKAGED, sizeof(int), "parent.c");
+
+    shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "parent.c");
+    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "parent.c");
 
     int x = 0;
 
@@ -282,6 +286,7 @@ void initializeIPCResources()
     memcpy(shmptr_num_liquid_medicines_produced, &x, sizeof(int));
     memcpy(shmptr_num_pill_medicines_failed, &x, sizeof(int));
     memcpy(shmptr_num_liquid_medicines_failed, &x, sizeof(int));
+    memcpy(shmptr_num_liquid_medicines_packaged, &x, sizeof(int));
 
     // Create a Shared Memories for thresholds (5 shared memories done)
     // shmptr_threshold_num_cargo_planes_crashed = createSharedMemory(SHKEY_THRESHOLD_NUM_CARGO_PLANES_CRASHED, sizeof(int), "parent.c");

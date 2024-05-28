@@ -27,7 +27,8 @@ Liquid_Production_Line *liquid_production_lines;
 
 char *shmptr_liquid_production_lines;
 char *shmptr_num_liquid_medicines_produced;
-char *shmptr_num_pill_medicines_failed;
+char *shmptr_num_liquid_medicines_failed;
+char *shmptr_num_liquid_medicines_packaged;
 
 int sem_liquid_production_lines;
 int sem_num_liquid_medicines_produced;
@@ -53,7 +54,8 @@ int main(int argc, char **argv)
     liquid_production_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
 
     shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "liquid_production_line.c");
-    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
+    shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
+    shmptr_num_liquid_medicines_packaged = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PACKAGED, sizeof(int), "liquid_production_line.c");
 
     // Open the semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");
@@ -130,8 +132,7 @@ void getInformation(char **argv)
     releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
     printf("Liquid Production Line %d is created with %d employees, and speed %d\n\n", liquid_production_line->num, liquid_production_line->num_employes, liquid_production_line->speed);
-    // printf("=====================================================================\n");
-    // fflush(stdout);
+    fflush(stdout);
 }
 
 void init_signals_handlers()
@@ -165,13 +166,14 @@ void employee(void *args)
 
         printf("Employee %d in liquid line %d inspects the medicine %d\n", *emp_id, liquid_production_line->num, index_medicine + 1);
         int j = inspect_medicine(liquid_production_line->liquid_medicines, index_medicine);
-        sleep(5); // sleep for 3 seconds to simulate the inspection process
+        sleep(3); // sleep for 3 seconds to simulate the inspection process
 
         // the inspection for this medicine is failed
         if (j == 0)
         {
             printf("Liquid Medicine %d in line %d is failed\n", liquid_production_line->liquid_medicines[index_medicine].id, liquid_production_line->liquid_medicines[index_medicine].production_line_num);
             liquid_production_line->liquid_medicines[index_medicine].is_failed = 1;
+            *shmptr_num_liquid_medicines_failed += 1;
             continue;
         }
         printf("Liquid Medicine %d in line %d is passed the inspection successfully\n", liquid_production_line->liquid_medicines[index_medicine].id, liquid_production_line->liquid_medicines[index_medicine].production_line_num);
@@ -179,11 +181,12 @@ void employee(void *args)
         // the inspection is successful go to the packaging
         // packaging the medicines
 
-        /*printf("Employee %d in liquid line %d doing package task\n", *emp_id, liquid_production_line->num);
+        printf("Employee %d in liquid line %d packages the medicine \n", *emp_id, liquid_production_line->num);
         package_medcine(liquid_production_line->liquid_medicines, index_medicine);
         sleep(3); // sleep for 3 seconds to simulate the packaging process
+        *shmptr_num_liquid_medicines_packaged += 1;
         printf("Liquid Medicine %d in line %d is packaged successfully\n", liquid_production_line->liquid_medicines[index_medicine].id, liquid_production_line->num);
-        */
+        fflush(stdout);
     }
 }
 
@@ -201,11 +204,17 @@ void createLiquidMedicines()
         liquid_production_line->liquid_medicines[j].production_line_num = liquid_production_line->num;
         liquid_production_line->liquid_medicines[j].level = get_random_number(range_level_liq_medicine[0], range_level_liq_medicine[1]);
         liquid_production_line->liquid_medicines[j].color = get_random_number(range_color_liq_medicine[0], range_color_liq_medicine[1]);
+        liquid_production_line->liquid_medicines[j].expiry_date = generate_random_date();
         liquid_production_line->liquid_medicines[j].is_sealed = get_random_number(0, 1);
         liquid_production_line->liquid_medicines[j].is_label_placed = get_random_number(0, 1);
+        liquid_production_line->liquid_medicines[j].date_is_printed = get_random_number(0, 1);
+
         liquid_production_line->liquid_medicines[j].is_inspected = 0;
         liquid_production_line->liquid_medicines[j].is_failed = 0;
+        liquid_production_line->liquid_medicines[j].is_medicine_placed = 0;
+        liquid_production_line->liquid_medicines[j].is_prescription_placed = 0;
         liquid_production_line->num_medicines++;
+        *shmptr_num_liquid_medicines_produced += 1;
 
         releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 

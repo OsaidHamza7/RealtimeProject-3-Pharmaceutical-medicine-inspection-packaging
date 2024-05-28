@@ -27,7 +27,7 @@ int numSuccessfulPillMedicine = 0;     // Number of successful pill medicine
 
 char *shmptr_liquid_production_lines;
 char *shmptr_num_liquid_medicines_produced;
-char *shmptr_num_pill_medicines_failed;
+char *shmptr_num_liquid_medicines_failed;
 
 int sem_liquid_production_lines;
 int sem_num_liquid_medicines_produced;
@@ -264,9 +264,9 @@ void display()
 
     float boxX = 20;
     float boxY = 50;
-    drawBox(boxX, boxY, numFailedBottleMedicine, "Failed Bottle Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_failed), "Failed Bottle Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, numSuccessfulBottleMedicine, "Successful Bottle Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Successful Bottle Medicine");
     boxX += BOX_SPACING;
     drawBox(boxX, boxY, numFailedPillMedicine, "Failed Pill Medicine");
     boxX += BOX_SPACING;
@@ -333,11 +333,14 @@ int main(int argc, char **argv)
     shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, 2 * sizeof(struct Liquid_Production_Line), "GUI.c");
     liquid_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
 
+    shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "GUI.c");
+    shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "GUI.c");
+
     // shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "liquid_production_line.c");
     // shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
 
     // Open the semaphores
-    sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");
+    sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "GUI.c");
 
     init();
     glutDisplayFunc(display); // Register display callback function

@@ -31,12 +31,13 @@ Pill_Production_Line *pill_production_lines;
 char *shmptr_pill_production_lines;
 char *shmptr_num_pill_medicines_produced;
 char *shmptr_num_pill_medicines_failed;
+char *shmptr_num_pill_medicines_packaged;
 
 int sem_pill_production_lines;
 int sem_num_pill_medicines_produced;
 int sem_num_pill_medicines_failed;
 
-sem_t mutex;
+sem_t mutex_pill_medcines;
 
 int main(int argc, char **argv)
 {
@@ -57,11 +58,11 @@ int main(int argc, char **argv)
 
     shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "pill_production_line.c");
     shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "pill_production_line.c");
+    shmptr_num_pill_medicines_packaged = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PACKAGED, sizeof(int), "liquid_production_line.c");
 
     // Open the semaphores
     sem_pill_production_lines = createSemaphore(SEMKEY_PILL_PRODUCTION_LINES, 1, 1, "pill_production_line.c");
 
-    sleep(2);
     // get information from the arguments
     getInformation(argv);
 
@@ -69,7 +70,7 @@ int main(int argc, char **argv)
     pthread_t create_pill_medicine_thread;
     pthread_create(&create_pill_medicine_thread, NULL, (void *)createPillMedicines, NULL);
 
-    sem_init(&mutex, 0, 1);
+    sem_init(&mutex_pill_medcines, 0, 1);
     // creats threads for employees
     pthread_t employees[number_of_employees];
 
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
     // {
     // }
 
-    sem_destroy(&mutex);
+    sem_destroy(&mutex_pill_medcines);
 
     return 0;
 }
@@ -113,7 +114,6 @@ void getInformation(char **argv)
     // print the information of the pill production line
     printf("Pill Production Line %d\n", production_line_num);
     printf("Number of employees: %d\n", number_of_employees);
-    printf("Number of Pill Medicines: %d - %d\n", range_number_of_medicines[0], range_number_of_medicines[1]);
     printf("Speed: %d - %d\n", range_of_speed[0], range_of_speed[1]);
     printf("Plastic Containers: %d - %d\n", range_plastic_containers[0], range_plastic_containers[1]);
     printf("Pills: %d - %d\n", range_pills[0], range_pills[1]);
@@ -126,14 +126,12 @@ void getInformation(char **argv)
     pill_production_line->pid = getpid();
     pill_production_line->num = production_line_num;
     pill_production_line->num_employes = number_of_employees;
-    pill_production_line->num_medicines = get_random_number(range_number_of_medicines[0], range_number_of_medicines[1]);
+    pill_production_line->num_medicines = 0;
     pill_production_line->speed = get_random_number(range_of_speed[0], range_of_speed[1]);
 
     releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
 
     printf("Pill Production Line %d is created with %d employees, %d medicines, and speed %d\n\n", pill_production_line->num, pill_production_line->num_employes, pill_production_line->num_medicines, pill_production_line->speed);
-    fflush(stdout);
-    printf("=====================================================================\n");
     fflush(stdout);
 }
 
@@ -153,10 +151,10 @@ void employee(void *args)
     while (1)
     {
         // inspect the uninspected medicines
-        sem_wait(&mutex);
-        printf("Employee %d in pill line %d doing inspect task\n", *emp_id, pill_production_line->num);
+        sem_wait(&mutex_pill_medcines);
+        printf("Employee %d in pill line %d go to take a new medicine\n", *emp_id, pill_production_line->num);
         int index_medicine = get_index_of_uninspected_medicine(pill_production_line->pill_medicines);
-        sem_post(&mutex);
+        sem_post(&mutex_pill_medcines);
 
         if (index_medicine == -1) // there is no uninspected medicines
         {
@@ -165,6 +163,7 @@ void employee(void *args)
             continue;
         }
 
+        printf("Employee %d in liquid line %d inspects the medicine %d\n", *emp_id, pill_production_line->num, index_medicine + 1);
         int j = make_inspection(pill_production_line->pill_medicines, index_medicine);
         sleep(3); // sleep for 3 seconds to simulate the inspection process
 
@@ -172,16 +171,20 @@ void employee(void *args)
         {
             printf("pill Medicine %d in line %d is failed\n", pill_production_line->pill_medicines[index_medicine].id, pill_production_line->pill_medicines[index_medicine].production_line_num);
             pill_production_line->pill_medicines[index_medicine].is_failed = 1;
+            *shmptr_num_pill_medicines_failed += 1;
             continue;
         }
+        printf("Pill Medicine %d in line %d is passed the inspection successfully\n", pill_production_line->pill_medicines[index_medicine].id, pill_production_line->pill_medicines[index_medicine].production_line_num);
 
         // the inspection is successful go to the packaging
         // packaging the medicines
 
-        printf("Employee %d in pill line %d doing package task\n", *emp_id, pill_production_line->num);
+        printf("Employee %d in pill line %d packages the medicine\n", *emp_id, pill_production_line->num);
         packaging(pill_production_line->pill_medicines, index_medicine);
         sleep(3); // sleep for 3 seconds to simulate the packaging process
+        *shmptr_num_pill_medicines_packaged += 1;
         printf("pill Medicine %d in line %d is packaged successfully\n", pill_production_line->pill_medicines[index_medicine].id, pill_production_line->num);
+        fflush(stdout);
     }
 }
 
@@ -234,8 +237,7 @@ void createPillMedicines()
 // Make an inspection function for the pill production line to check No plastic container is missing any pill, Pills in the plastic containers have the correct color and size and Medicine expiry date is clearly printed on the plastic container label
 int make_inspection(Pill_Production_Line *pill_Production_Line, int index_medicine)
 {
-    // check for each medicine
-
+    // check for each medicine in the production line
     printf("Pill Medicine %d in line %d is inspecting\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
     pill_Production_Line->pill_medicines[index_medicine].is_inspected = 1;
     sleep(2); // sleep for 2 seconds to simulate the inspection process

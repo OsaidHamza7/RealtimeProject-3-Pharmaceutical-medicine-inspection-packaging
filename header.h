@@ -43,6 +43,8 @@
 #define SHKEY_NUM_PILL_MEDICINES_PRODUCED 2345
 #define SHKEY_NUM_LIQUID_MEDICINES_FAILED 3456
 #define SHKEY_NUM_PILL_MEDICINES_FAILED 4567
+#define SHKEY_NUM_LIQUID_MEDICINES_PACKAGED 5678
+#define SHKEY_NUM_PILL_MEDICINES_PACKAGED 6789
 
 #define SEMKEY_LIQUID_PRODUCTION_LINES 7777
 #define SEMKEY_PILL_PRODUCTION_LINES 8888
@@ -104,7 +106,8 @@ typedef struct Liquid_Medicine
     bool is_failed;
     bool is_medicine_placed;
     bool is_prescription_placed;
-    int expiry_date;
+    bool date_is_printed;
+    Date expiry_date;
 } Liquid_Medicine;
 
 typedef struct Pill_Medicine
