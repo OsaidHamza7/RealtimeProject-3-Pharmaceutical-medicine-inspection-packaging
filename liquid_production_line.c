@@ -6,6 +6,7 @@ void getInformation(char **argv);
 void init_signals_handlers();
 void employee(void *args);
 void createLiquidMedicines();
+int get_index_of_uninspected_medicine(Liquid_Medicine *liquid_medicines);
 int inspect_medicine(Liquid_Medicine *liquid_medicines, int index_medicine);
 void package_medcine(Liquid_Medicine *liquid_medicines, int num_medicines);
 //***********************************************************************************
@@ -72,7 +73,7 @@ int main(int argc, char **argv)
     int employee_id[number_of_employees];
 
     // create thread for each employee
-    for (int i = 0; i < number_of_employees; i++)
+    /*for (int i = 0; i < number_of_employees; i++)
     {
         employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
@@ -83,7 +84,8 @@ int main(int argc, char **argv)
     {
         pthread_join(employees[i], NULL);
     }
-
+*/
+    pthread_join(create_liquid_medicine_thread, NULL);
     // while (1)
     // {
     // }
@@ -124,7 +126,7 @@ void getInformation(char **argv)
     liquid_production_line->num = production_line_num;
     liquid_production_line->num_employes = number_of_employees;
     liquid_production_line->speed = get_random_number(range_of_speed[0], range_of_speed[1]);
-
+    liquid_production_line->num_medicines = 0;
     releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
     printf("Liquid Production Line %d is created with %d employees, and speed %d\n\n", liquid_production_line->num, liquid_production_line->num_employes, liquid_production_line->speed);
@@ -201,7 +203,7 @@ void createLiquidMedicines()
 
         printf("Created Liquid Medicine %d in line %d with level %d, color %d, is_sealed %d, is_label_placed %d\n", liquid_production_line->liquid_medicines[j].id, liquid_production_line->num, liquid_production_line->liquid_medicines[j].level, liquid_production_line->liquid_medicines[j].color, liquid_production_line->liquid_medicines[j].is_sealed, liquid_production_line->liquid_medicines[j].is_label_placed);
         fflush(stdout);
-        sleep(5);
+        sleep(3);
         j++;
     }
 }

@@ -33,7 +33,7 @@ struct msgbuf msg;
 // arrays of pids for all the processes
 pid_t pids_liquid_production_lines[MAX_NUM_LIQUID_PRODUCTION_LINES];
 pid_t pids_pill_production_lines[MAX_NUM_PILL_PRODUCTION_LINES];
-pid_t pid_gui;
+pid_t pid_gui[1];
 // arrays of structs for all the processes
 Liquid_Production_Line liquid_production_lines[MAX_NUM_LIQUID_PRODUCTION_LINES];
 Pill_Production_Line pill_production_lines[MAX_NUM_PILL_PRODUCTION_LINES];
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
     alarm(simulation_threshold_time);
 
     //  create the GUI
-    // createGUI();
+    createGUI();
     createLiquidProductionLines();
     // createPillProductionLines();
 
@@ -255,7 +255,7 @@ void createGUI()
         break;
 
     default: // I'm parent
-        pid_gui = pid;
+        pid_gui[0] = pid;
         break;
     }
 }
@@ -419,7 +419,7 @@ void exitProgram()
     // kill all the child processes
     killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
     // killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
-    //  killAllProcesses(pid_gui, 1);
+    killAllProcesses(pid_gui, 1);
     printf("All child processes killed\n");
 
     printf("Cleaning up IPC resources...\n");
