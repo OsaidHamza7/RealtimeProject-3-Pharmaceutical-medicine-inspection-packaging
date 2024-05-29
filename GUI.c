@@ -1,7 +1,7 @@
 #include "header.h"
 #include "ipcs.h"
 
-#define LINES 4
+#define LINES 8
 #define MEDICINES_PER_LINE 5
 #define LINE_SPACING 120
 #define BOX_SPACING 240
@@ -16,7 +16,7 @@ enum ProductType
 };
 
 // ProductionLine lines[LINES][MEDICINES_PER_LINE];
-// Liquid_Production_Line liquid_lines[LINES];
+int ProductID[8] = {0};
 
 int liquidMedicinesCount[LINES] = {0}; // Keeps track of the number of medicines in each liquid line
 int pillmedicinesCount[LINES] = {0};   // Keeps track of the number of medicines in each pill line
@@ -29,11 +29,20 @@ char *shmptr_liquid_production_lines;
 char *shmptr_num_liquid_medicines_produced;
 char *shmptr_num_liquid_medicines_failed;
 
+char *shmptr_pill_production_lines;
+char *shmptr_num_pill_medicines_produced;
+char *shmptr_num_pill_medicines_failed;
+
 int sem_liquid_production_lines;
 int sem_num_liquid_medicines_produced;
 int sem_num_pill_medicines_failed;
 
+int sem_pill_production_lines;
+int sem_num_pill_medicines_produced;
+int sem_num_pill_medicines_failed;
+
 Liquid_Production_Line *liquid_lines;
+Pill_Production_Line *pill_lines;
 
 void initializeLines()
 {
@@ -56,51 +65,124 @@ void initializeLines()
     }*/
 }
 
-void drawLiquidBottle(float x, float y, float liquidLevel)
+void drawLiquidBottle(float x, float y, float liquidLevel, int numColor, int medicine_num)
 {
     glColor3f(0.0, 0.0, 1.0);
     glBegin(GL_QUADS);
-    glVertex2f(x - 10.0, y - 25.0);
-    glVertex2f(x + 10.0, y - 25.0);
-    glVertex2f(x + 10.0, y + 25.0);
-    glVertex2f(x - 10.0, y + 25.0);
+    glVertex2f(x - 15.0, y - 25.0);
+    glVertex2f(x + 15.0, y - 25.0);
+    glVertex2f(x + 15.0, y + 25.0);
+    glVertex2f(x - 15.0, y + 25.0);
     glEnd();
 
     glColor3f(0.7, 0.7, 0.7);
     glBegin(GL_QUADS);
-    glVertex2f(x - 10.0, y + 25.0);
-    glVertex2f(x + 10.0, y + 25.0);
-    glVertex2f(x + 10.0, y + 30.0);
-    glVertex2f(x - 10.0, y + 30.0);
+    glVertex2f(x - 15.0, y + 25.0);
+    glVertex2f(x + 15.0, y + 25.0);
+    glVertex2f(x + 15.0, y + 30.0);
+    glVertex2f(x - 15.0, y + 30.0);
     glEnd();
 
-    glColor3f(0.0, 1.0, 0.0);
+    switch (numColor)
+    {
+    case 1:
+        glColor3f(0.0f, 0.75f, 1.0f); // RGB: (0, 191, 255)
+        break;
+    case 2:
+        glColor3f(0.86f, 0.08f, 0.24f); // RGB: (220, 20, 60)
+        break;
+    case 3:
+        glColor3f(0.13f, 0.55f, 0.13f); // RGB: (34, 139, 34)
+        break;
+    case 4:
+        glColor3f(0.85f, 0.65f, 0.13f); // RGB: (218, 165, 32)
+        break;
+    case 5:
+        glColor3f(0.58f, 0.44f, 0.86f); // RGB: (148, 112, 219)
+        break;
+    case 6:
+        glColor3f(1.0f, 0.39f, 0.28f); // RGB: (255, 99, 71)
+        break;
+    case 7:
+        glColor3f(0.25f, 0.88f, 0.82f); // RGB: (64, 224, 208)
+        break;
+    default:
+        glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
+    }
+    // glColor3f(0.0, 1.0, 0.0);
     float liquidHeight = (liquidLevel / 50.0) * 50.0;
     glBegin(GL_QUADS);
-    glVertex2f(x - 8.0, y - 25.0);
-    glVertex2f(x + 8.0, y - 25.0);
-    glVertex2f(x + 8.0, y - 25.0 + liquidHeight);
-    glVertex2f(x - 8.0, y - 25.0 + liquidHeight);
+    glVertex2f(x - 13.0, y - 25.0);
+    glVertex2f(x + 13.0, y - 25.0);
+    glVertex2f(x + 13.0, y - 25.0 + liquidHeight);
+    glVertex2f(x - 13.0, y - 25.0 + liquidHeight);
     glEnd();
+
+    // Draw the label in the middle of the bottle
+    glColor3f(1.0, 1.0, 1.0);  // White color for the label
+    glRasterPos2f(x - 5.0, y); // Set the raster position for the text
+    char labelID[4];
+    snprintf(labelID, sizeof(labelID), "%d", medicine_num);
+    for (int i = 0; labelID[i] != '\0'; ++i)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, labelID[i]);
+    }
 }
 
-void drawPillContainer(float x, float y)
+void drawPillContainer(float x, float y, int medicine_num)
 {
-    glColor3f(0.5, 0.5, 0.5);
+    glColor3f(0.8f, 0.8f, 0.8f);
     glBegin(GL_QUADS);
-    glVertex2f(x - 20.0, y - 20.0);
-    glVertex2f(x + 20.0, y - 20.0);
-    glVertex2f(x + 20.0, y + 20.0);
-    glVertex2f(x - 20.0, y + 20.0);
+    glVertex2f(x - 23.0, y - 23.0);
+    glVertex2f(x + 23.0, y - 23.0);
+    glVertex2f(x + 23.0, y + 23.0);
+    glVertex2f(x - 23.0, y + 23.0);
     glEnd();
+
+    // Draw the label in the middle of the bottle
+    glColor3f(0.0, 0.0, 0.0);      // White color for the label
+    glRasterPos2f(x - 5.0, y - 7); // Set the raster position for the text
+    char labelID[4];
+    snprintf(labelID, sizeof(labelID), "%d", medicine_num);
+    for (int i = 0; labelID[i] != '\0'; ++i)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, labelID[i]);
+    }
 }
 
-void drawPill(float x, float y, int numPills)
+void drawPill(float x, float y, int numPills, int numColor, int medicine_num)
 {
-    drawPillContainer(x, y);
+    drawPillContainer(x, y, medicine_num);
 
-    glColor3f(1.0, 1.0, 0.0);
-    for (int i = 0; i < numPills; ++i)
+    switch (numColor)
+    {
+    case 1:
+        glColor3f(0.0f, 0.75f, 1.0f); // RGB: (0, 191, 255)
+        break;
+    case 2:
+        glColor3f(0.86f, 0.08f, 0.24f); // RGB: (220, 20, 60)
+        break;
+    case 3:
+        glColor3f(0.13f, 0.55f, 0.13f); // RGB: (34, 139, 34)
+        break;
+    case 4:
+        glColor3f(0.85f, 0.65f, 0.13f); // RGB: (218, 165, 32)
+        break;
+    case 5:
+        glColor3f(0.58f, 0.44f, 0.86f); // RGB: (148, 112, 219)
+        break;
+    case 6:
+        glColor3f(1.0f, 0.39f, 0.28f); // RGB: (255, 99, 71)
+        break;
+    case 7:
+        glColor3f(0.25f, 0.88f, 0.82f); // RGB: (64, 224, 208)
+        break;
+    default:
+        glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
+    }
+
+    // print pills
+    for (int i = 0; i < 5; ++i)
     {
         float angle = i * (360.0 / numPills);
         float px = x + 15.0 * cos(angle * M_PI / 180.0);
@@ -109,7 +191,7 @@ void drawPill(float x, float y, int numPills)
         glVertex2f(px, py);
         for (int j = 0; j <= 360; j += 10)
         {
-            glVertex2f(px + 3.0 * cos(j * M_PI / 180.0), py + 3.0 * sin(j * M_PI / 180.0));
+            glVertex2f(px + 5.0 * cos(j * M_PI / 180.0), py + 5.0 * sin(j * M_PI / 180.0));
         }
         glEnd();
     }
@@ -244,16 +326,6 @@ void init()
     glLoadIdentity();
     gluOrtho2D(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT);
     // initializeLines();
-
-    // Open a shared memories
-    /*shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, 4 * sizeof(struct Liquid_Production_Line), "GUI.c");
-    liquid_production_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
-
-    shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "liquid_production_line.c");
-    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
-
-    // Open the semaphores
-    sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");*/
 }
 
 void display()
@@ -279,45 +351,76 @@ void display()
         float x = 50 + i * LINE_SPACING;
         glColor3f(1.0, 1.0, 1.0);
         glBegin(GL_LINES);
-        glVertex2f(x, 50.0);
+        glVertex2f(x, 80.0);
         glVertex2f(x, 550.0);
         glEnd();
 
         // Draw human figure next to the production line
         drawHuman(x + 50, 300); // Adjusted position
         int k = 0;
-        for (int j = 0; j < liquid_lines[i].num_medicines; j++)
-        {
-            // float productX = 50 + i * LINE_SPACING;
-            // float productY = 500.0 - j * 80;
-
-            if (liquid_lines[i].liquid_medicines[j].is_failed == 1)
-            {
-                continue;
-            }
-
-            float productX = x;
-            float productY = 500.0 - k * 80;
-            if (k > MEDICINES_PER_LINE - 1)
-            {
-                break;
-            }
-            k++;
-            // printf("Liquid Medicine %d level %d in line %d ProductX: %f, ProductY: %f\n", j, liquid_lines[i].liquid_medicines[j].level, i, productX, productY);
-            drawLiquidBottle(productX, productY, (liquid_lines[i].liquid_medicines[j].level % 41) + 10);
-        }
 
         char label[20];
         if (i < 4)
         {
             snprintf(label, sizeof(label), "Bottle Line %d", i + 1);
+            k = 0;
+            for (int j = 0; j < liquid_lines[i].num_medicines; j++)
+            {
+                if (liquid_lines[i].liquid_medicines[j].is_failed == 1)
+                {
+                    continue;
+                }
+
+                float productX = x;
+                float productY = 500.0 - k * 80;
+                if (k > MEDICINES_PER_LINE - 1)
+                {
+                    break;
+                }
+                k++;
+                // printf("Liquid Medicine %d level %d in line %d ProductX: %f, ProductY: %f\n", j, liquid_lines[i].liquid_medicines[j].level, i, productX, productY);
+                drawLiquidBottle(productX, productY, (liquid_lines[i].liquid_medicines[j].level % 41) + 10, liquid_lines[i].liquid_medicines[j].color, j + 1);
+            }
         }
+
         else
         {
             snprintf(label, sizeof(label), "Pill Line %d", i - 3);
+            k = 0;
+            for (int j = 0; j < pill_lines[i-4].num_medicines; j++)
+            {
+                if (pill_lines[i - 4].pill_medicines[j].is_failed == 1)
+                {
+                    continue;
+                }
+
+                float productX = x;
+                float productY = 500.0 - k * 80;
+                if (k > MEDICINES_PER_LINE - 1)
+                {
+                    break;
+                }
+                k++;
+                // printf("Pill Medicine %d size %d in line %d ProductX: %f, ProductY: %f\n", j, pill_lines[i].pill_medicines[j].size, i, productX, productY);
+                drawPill(productX, productY, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].num_pills, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].pills[0].color, j + 1);
+            }
         }
         drawTextLabel(label, x - 40, 570);
     }
+
+    /*for (int i = 4; i < 2*LINES; i++)
+    {
+        float x = 50 + i * LINE_SPACING;
+        glColor3f(1.0, 1.0, 1.0);
+        glBegin(GL_LINES);
+        glVertex2f(x, 80.0);
+        glVertex2f(x, 550.0);
+        glEnd();
+
+                // Draw human figure next to the production line
+        drawHuman(x + 50, 300); // Adjusted position
+        int k = 0;
+    }*/
     glFlush();
 }
 
@@ -330,17 +433,24 @@ int main(int argc, char **argv)
     glutCreateWindow("Medicine Factory with 8 Production Lines");
 
     // Open a shared memories
-    shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, 2 * sizeof(struct Liquid_Production_Line), "GUI.c");
+    shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, 4 * sizeof(struct Liquid_Production_Line), "GUI.c");
     liquid_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
+
+    shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, 4 * sizeof(struct Pill_Production_Line), "GUI.c");
+    pill_lines = (struct Pill_Production_Line *)shmptr_pill_production_lines;
 
     shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "GUI.c");
     shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "GUI.c");
+
+    shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "GUI.c");
+    shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "GUI.c");
 
     // shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "liquid_production_line.c");
     // shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
 
     // Open the semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "GUI.c");
+    sem_pill_production_lines = createSemaphore(SEMKEY_PILL_PRODUCTION_LINES, 1, 1, "GUI.c");
 
     init();
     glutDisplayFunc(display); // Register display callback function

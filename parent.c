@@ -111,7 +111,7 @@ int main(int argc, char **argv)
     // create the GUI
     createGUI();
     createLiquidProductionLines();
-    // createPillProductionLines();
+    createPillProductionLines();
 
     /*
     join the monitoring thread to the main thread to keep the program
@@ -424,7 +424,7 @@ void exitProgram()
 
     // kill all the child processes
     killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
-    // killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
+    killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
     killAllProcesses(pid_gui, 1);
     printf("All child processes killed\n");
 

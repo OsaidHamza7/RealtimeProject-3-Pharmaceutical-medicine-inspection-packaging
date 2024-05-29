@@ -7,8 +7,8 @@ void getInformation(char **argv);
 void init_signals_handlers();
 void employee(void *args);
 void createPillMedicines();
-int make_inspection(Pill_Production_Line *pill_Production_Line, int index_medicine);
-void packaging(Pill_Production_Line *pill_Production_Line, int index_medicine);
+int make_inspection(Pill_Medicine *pill_medicines, int index_medicine);
+void packaging(Pill_Medicine *pill_medicines, int index_medicine);
 int get_index_of_uninspected_medicine(Pill_Medicine *pill_medicines);
 //***********************************************************************************
 
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
     int employee_id[number_of_employees];
     // create thread for each employee
-    for (int i = 0; i < number_of_employees; i++)
+    /*for (int i = 0; i < number_of_employees; i++)
     {
         employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
@@ -86,12 +86,12 @@ int main(int argc, char **argv)
     for (int i = 0; i < number_of_employees; i++)
     {
         pthread_join(employees[i], NULL);
-    }
+    }*/
 
     // while (1)
     // {
     // }
-
+    pthread_join(create_pill_medicine_thread, NULL);
     sem_destroy(&mutex_pill_medcines);
 
     return 0;
@@ -214,11 +214,14 @@ void createPillMedicines()
         pill_production_line->pill_medicines[i].is_failed = 0;
         pill_production_line->pill_medicines[i].is_inspected = 0;
         pill_production_line->pill_medicines[i].is_packaged = 0;
+        pill_production_line->pill_medicines[i].prescription_is_added = 0;
+        pill_production_line->num_medicines++;
+        *shmptr_num_pill_medicines_produced += 1;
 
         releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
         // print the pill based medicines
 
-        printf("Pill Medicine %d in production line num %d,with num plastic containers %d, with expiry date %d\n", pill_production_line->pill_medicines[i].id, pill_production_line->pill_medicines[i].production_line_num, pill_production_line->pill_medicines[i].num_plastic_containers, pill_production_line->pill_medicines[i].Expiry_date);
+        printf("Pill Medicine %d in production line num %d,with num plastic containers %d, with expiry date \n", pill_production_line->pill_medicines[i].id, pill_production_line->pill_medicines[i].production_line_num, pill_production_line->pill_medicines[i].num_plastic_containers);
         for (int j = 0; j < pill_production_line->pill_medicines->num_plastic_containers; j++)
         {
             printf("Plastic container with id %d, number of bills %d\n", pill_production_line->pill_medicines->plastic_containers[j].id, pill_production_line->pill_medicines->plastic_containers[j].num_pills);
@@ -235,69 +238,69 @@ void createPillMedicines()
 }
 
 // Make an inspection function for the pill production line to check No plastic container is missing any pill, Pills in the plastic containers have the correct color and size and Medicine expiry date is clearly printed on the plastic container label
-int make_inspection(Pill_Production_Line *pill_Production_Line, int index_medicine)
+int make_inspection(Pill_Medicine *pill_medicines, int index_medicine)
 {
     // check for each medicine in the production line
-    printf("Pill Medicine %d in line %d is inspecting\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
-    pill_Production_Line->pill_medicines[index_medicine].is_inspected = 1;
+    printf("Pill Medicine %d in line %d is inspecting\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
+    pill_medicines[index_medicine].is_inspected = 1;
     sleep(2); // sleep for 2 seconds to simulate the inspection process
-    if (pill_Production_Line->pill_medicines[index_medicine].num_plastic_containers >= range_of_plastic_containers[0] && pill_Production_Line->pill_medicines[index_medicine].num_plastic_containers <= range_of_plastic_containers[1])
+    if (pill_medicines[index_medicine].num_plastic_containers >= range_of_plastic_containers[0] && pill_medicines[index_medicine].num_plastic_containers <= range_of_plastic_containers[1])
     {
-        printf("Pill Medicine %d in the production line %d is in expected range of the number for plastic containers\n\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+        printf("Pill Medicine %d in the production line %d is in expected range of the number for plastic containers\n\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
         fflush(stdout);
     }
     else
     {
-        printf("Pill Medicine %d in line %d is NOT in expected range of number of plastic containers\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+        printf("Pill Medicine %d in line %d is NOT in expected range of number of plastic containers\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
         return 0;
     }
 
-    for (int j = 0; j < pill_Production_Line->pill_medicines->num_plastic_containers; j++)
+    for (int j = 0; j < pill_medicines->num_plastic_containers; j++)
     {
-        if (pill_Production_Line->pill_medicines->plastic_containers[index_medicine].num_pills >= range_of_pills[0] && pill_Production_Line->pill_medicines->plastic_containers[index_medicine].num_pills <= range_of_pills[1])
+        if (pill_medicines->plastic_containers[index_medicine].num_pills >= range_of_pills[0] && pill_medicines->plastic_containers[index_medicine].num_pills <= range_of_pills[1])
         {
-            printf("Pill Medicine %d in line %d is in expected range of number of pills\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+            printf("Pill Medicine %d in line %d is in expected range of number of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
             fflush(stdout);
         }
         else
         {
-            printf("Pill Medicine %d in line %d is NOT in expected range of number of pills\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+            printf("Pill Medicine %d in line %d is NOT in expected range of number of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
             return 0;
         }
 
         // Pills in the plastic containers have the correct color and size
-        for (int k = 0; k < pill_Production_Line->pill_medicines->plastic_containers->num_pills; k++)
+        for (int k = 0; k < pill_medicines->plastic_containers->num_pills; k++)
         {
-            if (pill_Production_Line->pill_medicines->plastic_containers->pills[k].color >= range_color_pill[0] && pill_Production_Line->pill_medicines->plastic_containers->pills[k].color <= range_color_pill[1])
+            if (pill_medicines->plastic_containers->pills[k].color >= range_color_pill[0] && pill_medicines->plastic_containers->pills[k].color <= range_color_pill[1])
             {
-                printf("Pill Medicine %d in line %d is in expected range of color of pills\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+                printf("Pill Medicine %d in line %d is in expected range of color of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 fflush(stdout);
             }
             else
             {
-                printf("Pill Medicine %d in line %d is NOT in expected range of color of pills\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+                printf("Pill Medicine %d in line %d is NOT in expected range of color of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 return 0;
             }
 
-            if (pill_Production_Line->pill_medicines->plastic_containers->pills[k].size >= range_size_pill[0] && pill_Production_Line->pill_medicines->plastic_containers->pills[k].size <= range_size_pill[1])
+            if (pill_medicines->plastic_containers->pills[k].size >= range_size_pill[0] && pill_medicines->plastic_containers->pills[k].size <= range_size_pill[1])
             {
-                printf("Pill Medicine %d in line %d is in expected range of size of pills\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+                printf("Pill Medicine %d in line %d is in expected range of size of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 fflush(stdout);
             }
             else
             {
-                printf("Pill Medicine %d in line %d is NOT in expected range of size of pills\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+                printf("Pill Medicine %d in line %d is NOT in expected range of size of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 return 0;
             }
 
-            if (pill_Production_Line->pill_medicines[index_medicine].plastic_containers[j].date_is_printed == 0)
+            if (pill_medicines[index_medicine].plastic_containers[j].date_is_printed == 0)
             {
-                printf("Pill Medicine %d in line %d does NOT have an expiry date in thE back of the container\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+                printf("Pill Medicine %d in line %d does NOT have an expiry date in thE back of the container\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 return 0;
             }
             else
             {
-                printf("Pill Medicine %d in line %d has an expiry date in the back of the container\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
+                printf("Pill Medicine %d in line %d has an expiry date in the back of the container\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 fflush(stdout);
             }
         }
@@ -309,19 +312,19 @@ int make_inspection(Pill_Production_Line *pill_Production_Line, int index_medici
     // print the inspection results
     printf("Inspection results:\n");
     // if the inspection is successful , print that is good , if not create a varaible to add the number of mdedicines that are missing that missed
-    printf("Pill production line %d inspection is successful.\n", pill_Production_Line->num);
+    printf("Pill production line %d inspection is successful.\n", pill_production_line->num);
     fflush(stdout);
     return 1;
 }
 
-void packaging(Pill_Production_Line *pill_Production_Line, int index_medicine)
+void packaging(Pill_Medicine *pill_medicines, int index_medicine)
 {
 
-    printf("Pill Medicine %d in line %d is packaging\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
-    pill_Production_Line->pill_medicines[index_medicine].is_packaged = 1;
+    printf("Pill Medicine %d in line %d is packaging\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
+    pill_medicines[index_medicine].is_packaged = 1;
 
-    printf("The folded prescriptions is added to Pill Medicine %d in line %d.\n", pill_Production_Line->pill_medicines[index_medicine].id, pill_Production_Line->pill_medicines[index_medicine].production_line_num);
-    pill_Production_Line->pill_medicines[index_medicine].prescription_is_added = 1;
+    printf("The folded prescriptions is added to Pill Medicine %d in line %d.\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
+    pill_medicines[index_medicine].prescription_is_added = 1;
 }
 
 int get_index_of_uninspected_medicine(Pill_Medicine *pill_medicines)

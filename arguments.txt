@@ -5,9 +5,9 @@ range_speed_lines 50,100
 range_of_plastic_containers 5,10
 range_of_pills 3,10
 range_level_liquid_medicine 1,30
-range_color_liquid_medicine 5,25
+range_color_liquid_medicine 1,7
 range_size_pill 5,20
-range_color_pill 10,30
+range_color_pill 1,7
 threshold_of_num_liquid_medicines_produced 20
 threshold_of_num_pill_medicines_produced 21
 threshold_of_num_liquid_medicines_failed 22
