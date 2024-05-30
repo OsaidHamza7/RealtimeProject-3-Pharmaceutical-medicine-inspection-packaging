@@ -205,9 +205,9 @@ void createLiquidMedicines()
         liquid_production_line->liquid_medicines[j].level = get_random_number(range_level_liq_medicine[0], range_level_liq_medicine[1]);
         liquid_production_line->liquid_medicines[j].color = get_random_number(range_color_liq_medicine[0], range_color_liq_medicine[1]);
         liquid_production_line->liquid_medicines[j].expiry_date = generate_random_date();
-        liquid_production_line->liquid_medicines[j].is_sealed = get_random_number(0, 1);
-        liquid_production_line->liquid_medicines[j].is_label_placed = get_random_number(0, 1);
-        liquid_production_line->liquid_medicines[j].date_is_printed = get_random_number(0, 1);
+        liquid_production_line->liquid_medicines[j].is_sealed = rand() % 10 < 7 ? 1 : 0;
+        liquid_production_line->liquid_medicines[j].is_label_placed = rand() % 10 < 7 ? 1 : 0;
+        liquid_production_line->liquid_medicines[j].date_is_printed = rand() % 10 < 7 ? 1 : 0;
 
         liquid_production_line->liquid_medicines[j].is_inspected = 0;
         liquid_production_line->liquid_medicines[j].is_failed = 0;

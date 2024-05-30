@@ -338,11 +338,11 @@ void display()
     float boxY = 50;
     drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_failed), "Failed Bottle Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Successful Bottle Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Produced Bottle Medicine");
     boxX += BOX_SPACING;
     drawBox(boxX, boxY, numFailedPillMedicine, "Failed Pill Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, numSuccessfulPillMedicine, "Successful Pill Medicine");
+    drawBox(boxX, boxY, numSuccessfulPillMedicine, "Produced Pill Medicine");
 
     // check the shared memory for the liquid production lines,and if there is a new medicine, update the GUI
 

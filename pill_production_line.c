@@ -214,7 +214,7 @@ void createPillMedicines()
             }
         }
         pill_production_line->pill_medicines[i].Expiry_date = generate_random_date();
-        pill_production_line->pill_medicines[i].plastic_containers->date_is_printed = get_random_number(0, 1);
+        pill_production_line->pill_medicines[i].plastic_containers->date_is_printed = rand() % 10 < 7 ? 1 : 0;
         pill_production_line->pill_medicines[i].is_failed = 0;
         pill_production_line->pill_medicines[i].is_inspected = 0;
         pill_production_line->pill_medicines[i].is_packaged = 0;
