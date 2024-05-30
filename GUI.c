@@ -182,7 +182,7 @@ void drawPill(float x, float y, int numPills, int numColor, int medicine_num)
     }
 
     // print pills
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < numPills; ++i)
     {
         float angle = i * (360.0 / numPills);
         float px = x + 15.0 * cos(angle * M_PI / 180.0);
@@ -378,7 +378,6 @@ void display()
                     break;
                 }
                 k++;
-                // printf("Liquid Medicine %d level %d in line %d ProductX: %f, ProductY: %f\n", j, liquid_lines[i].liquid_medicines[j].level, i, productX, productY);
                 drawLiquidBottle(productX, productY, (liquid_lines[i].liquid_medicines[j].level % 41) + 10, liquid_lines[i].liquid_medicines[j].color, j + 1);
             }
         }
@@ -387,7 +386,7 @@ void display()
         {
             snprintf(label, sizeof(label), "Pill Line %d", i - 3);
             k = 0;
-            for (int j = 0; j < pill_lines[i-4].num_medicines; j++)
+            for (int j = 0; j < pill_lines[i - 4].num_medicines; j++)
             {
                 if (pill_lines[i - 4].pill_medicines[j].is_failed == 1)
                 {
@@ -401,26 +400,11 @@ void display()
                     break;
                 }
                 k++;
-                // printf("Pill Medicine %d size %d in line %d ProductX: %f, ProductY: %f\n", j, pill_lines[i].pill_medicines[j].size, i, productX, productY);
                 drawPill(productX, productY, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].num_pills, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].pills[0].color, j + 1);
             }
         }
         drawTextLabel(label, x - 40, 570);
     }
-
-    /*for (int i = 4; i < 2*LINES; i++)
-    {
-        float x = 50 + i * LINE_SPACING;
-        glColor3f(1.0, 1.0, 1.0);
-        glBegin(GL_LINES);
-        glVertex2f(x, 80.0);
-        glVertex2f(x, 550.0);
-        glEnd();
-
-                // Draw human figure next to the production line
-        drawHuman(x + 50, 300); // Adjusted position
-        int k = 0;
-    }*/
     glFlush();
 }
 

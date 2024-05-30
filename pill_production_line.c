@@ -38,6 +38,7 @@ int sem_num_pill_medicines_produced;
 int sem_num_pill_medicines_failed;
 
 sem_t mutex_pill_medcines;
+int max_produce_time = 10;
 
 int main(int argc, char **argv)
 {
@@ -76,7 +77,7 @@ int main(int argc, char **argv)
 
     int employee_id[number_of_employees];
     // create thread for each employee
-    /*for (int i = 0; i < number_of_employees; i++)
+    for (int i = 0; i < number_of_employees; i++)
     {
         employee_id[i] = i + 1;
         pthread_create(&employees[i], NULL, (void *)employee, (void *)&employee_id[i]);
@@ -86,7 +87,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < number_of_employees; i++)
     {
         pthread_join(employees[i], NULL);
-    }*/
+    }
 
     // while (1)
     // {
@@ -193,6 +194,9 @@ void createPillMedicines()
     int i = 0;
     while (1)
     {
+        int time = max_produce_time - (pill_production_line->speed * max_produce_time) / 100;
+        time = (time < 2) ? 2 : time;
+        sleep(time);
         acquireSem(sem_pill_production_lines, 0, "pill_production_line.c");
 
         pill_production_line->pill_medicines[i].id = i + 1;
@@ -200,13 +204,13 @@ void createPillMedicines()
         pill_production_line->pill_medicines[i].num_plastic_containers = get_random_number(range_of_plastic_containers[0], range_of_plastic_containers[1]);
         for (int j = 0; j < pill_production_line->pill_medicines->num_plastic_containers; j++)
         {
-            pill_production_line->pill_medicines->plastic_containers[j].id = j + 1;
-            pill_production_line->pill_medicines->plastic_containers[j].num_pills = get_random_number(range_of_pills[0], range_of_pills[1]);
-            for (int k = 0; k < pill_production_line->pill_medicines->plastic_containers->num_pills; k++)
+            pill_production_line->pill_medicines[i].plastic_containers[j].id = j + 1;
+            pill_production_line->pill_medicines[i].plastic_containers[j].num_pills = get_random_number(range_of_pills[0], range_of_pills[1]);
+            for (int k = 0; k < pill_production_line->pill_medicines[i].plastic_containers[j].num_pills; k++)
             {
-                pill_production_line->pill_medicines->plastic_containers->pills[k].id = k + 1;
-                pill_production_line->pill_medicines->plastic_containers->pills[k].color = get_random_number(range_color_pill[0], range_color_pill[1]);
-                pill_production_line->pill_medicines->plastic_containers->pills[k].size = get_random_number(range_size_pill[0], range_size_pill[1]);
+                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].id = k + 1;
+                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].color = get_random_number(range_color_pill[0], range_color_pill[1]);
+                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].size = get_random_number(range_size_pill[0], range_size_pill[1]);
             }
         }
         pill_production_line->pill_medicines[i].Expiry_date = generate_random_date();
@@ -219,20 +223,22 @@ void createPillMedicines()
         *shmptr_num_pill_medicines_produced += 1;
 
         releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
-        // print the pill based medicines
+        // print the pill based medicine information
 
-        printf("Pill Medicine %d in production line num %d,with num plastic containers %d, with expiry date \n", pill_production_line->pill_medicines[i].id, pill_production_line->pill_medicines[i].production_line_num, pill_production_line->pill_medicines[i].num_plastic_containers);
-        for (int j = 0; j < pill_production_line->pill_medicines->num_plastic_containers; j++)
+        printf("Pill Medicine %d in production line num %d,with num plastic containers %d, with expiry date \n", pill_production_line->pill_medicines[i].id, pill_production_line->num, pill_production_line->pill_medicines[i].num_plastic_containers);
+
+        for (int j = 0; j < pill_production_line->pill_medicines[i].num_plastic_containers; j++)
         {
-            printf("Plastic container with id %d, number of bills %d\n", pill_production_line->pill_medicines->plastic_containers[j].id, pill_production_line->pill_medicines->plastic_containers[j].num_pills);
-            for (int k = 0; k < pill_production_line->pill_medicines->plastic_containers->num_pills; k++)
+            printf("Plastic container with id %d, number of bills %d\n", pill_production_line->pill_medicines[i].plastic_containers[j].id, pill_production_line->pill_medicines[i].plastic_containers[j].num_pills);
+            for (int k = 0; k < pill_production_line->pill_medicines[i].plastic_containers[j].num_pills; k++)
             {
-                printf("Pill with id %d, color %d, size %d\n", pill_production_line->pill_medicines->plastic_containers->pills[k].id, pill_production_line->pill_medicines->plastic_containers->pills[k].color, pill_production_line->pill_medicines->plastic_containers->pills[k].size);
+                printf("Pill with id %d, color %d, size %d\n", pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].id, pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].color, pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].size);
             }
         }
+
         printf("=====================================================================\n");
         fflush(stdout);
-        sleep(5);
+
         i++;
     }
 }

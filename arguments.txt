@@ -3,7 +3,7 @@ num_pill_production_lines 4
 num_employees 3
 range_speed_lines 50,100
 range_of_plastic_containers 5,10
-range_of_pills 3,10
+range_of_pills 1,5
 range_level_liquid_medicine 1,30
 range_color_liquid_medicine 1,7
 range_size_pill 5,20
