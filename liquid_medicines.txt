@@ -1,0 +1,20 @@
+Tylenol, 1, 30, 1, 7
+NyQuil, 2, 30, 2, 7
+Mylanta, 3, 30, 3, 7
+Zyrtec, 4, 30, 4, 7
+Benadryl, 5, 30, 1, 7
+Pepto, 6, 30, 6, 7
+Delsym, 7, 30, 4, 7
+Motrin, 8, 30, 2, 7
+Advil, 9, 30, 3, 7
+Robitussin, 10, 30, 1, 7
+Pedialyte, 11, 30, 4, 7
+Cough DM, 12, 30, 5, 7
+Allegra, 13, 30, 6, 7
+Dimetapp, 14, 30, 2, 7
+Flonase, 15, 30, 3, 7
+Gaviscon, 16, 30, 7, 7
+Lactulose, 17, 30, 1, 7
+Maalox, 18, 30, 5, 7
+MiraLAX, 19, 30, 4, 7
+Sudafed, 20, 30, 6, 7

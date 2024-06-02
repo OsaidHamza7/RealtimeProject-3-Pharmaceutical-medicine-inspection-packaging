@@ -364,9 +364,9 @@ void display()
         {
             snprintf(label, sizeof(label), "Bottle Line %d", i + 1);
             k = 0;
-            for (int j = 0; j < liquid_lines[i].num_medicines; j++)
+            for (int j = 0; j < liquid_lines[i].production_line.num_produced_medicines; j++)
             {
-                if (liquid_lines[i].liquid_medicines[j].is_failed == 1)
+                if (liquid_lines[i].bottles[j].is_failed == 1)
                 {
                     continue;
                 }
@@ -378,7 +378,7 @@ void display()
                     break;
                 }
                 k++;
-                drawLiquidBottle(productX, productY, (liquid_lines[i].liquid_medicines[j].level % 41) + 10, liquid_lines[i].liquid_medicines[j].color, j + 1);
+                drawLiquidBottle(productX, productY, (liquid_lines[i].bottles[j].liquid_medicine.level % 41) + 10, liquid_lines[i].bottles[j].liquid_medicine.color, j + 1);
             }
         }
 
@@ -386,7 +386,7 @@ void display()
         {
             snprintf(label, sizeof(label), "Pill Line %d", i - 3);
             k = 0;
-            for (int j = 0; j < pill_lines[i - 4].num_medicines; j++)
+            for (int j = 0; j < pill_lines[i - 4].production_line.num_produced_medicines; j++)
             {
                 if (pill_lines[i - 4].pill_medicines[j].is_failed == 1)
                 {
@@ -416,11 +416,14 @@ int main(int argc, char **argv)
     glutInitWindowPosition(160, 120);
     glutCreateWindow("Medicine Factory with 8 Production Lines");
 
+    int num_liquid_production_lines = atoi(argv[1]);
+    int num_pill_production_lines = atoi(argv[2]);
+
     // Open a shared memories
-    shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, 4 * sizeof(struct Liquid_Production_Line), "GUI.c");
+    shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), "GUI.c");
     liquid_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
 
-    shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, 4 * sizeof(struct Pill_Production_Line), "GUI.c");
+    shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), "GUI.c");
     pill_lines = (struct Pill_Production_Line *)shmptr_pill_production_lines;
 
     shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "GUI.c");

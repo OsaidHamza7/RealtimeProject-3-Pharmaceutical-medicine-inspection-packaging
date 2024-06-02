@@ -2,7 +2,7 @@
 
 int num_liquid_production_lines = 5;
 int num_pill_production_lines = 5;
-int num_employees = 10;
+int num_employees[2] = {1, 5};
 int range_speed_lines[2] = {1, 5};
 int range_of_liquid_medicines[2] = {1, 5};
 int range_of_pill_medicines[2] = {1, 5};
@@ -23,11 +23,12 @@ int threshold_of_num_liquid_medicines_failed = 10;
 int threshold_of_num_pill_medicines_failed = 10;
 int simulation_threshold_time = 60;
 
+char tempLine[MAX_LINE_LENGTH];
+char varName[MAX_LINE_LENGTH];
+char valueStr[MAX_LINE_LENGTH];
+
 void readFromFile(const char *filename, int *array)
 {
-    char tempLine[MAX_LINE_LENGTH];
-    char varName[MAX_LINE_LENGTH];
-    char valueStr[MAX_LINE_LENGTH];
 
     FILE *file = fopen(filename, "r");
     if (file == NULL)
@@ -65,6 +66,11 @@ void readFromFile(const char *filename, int *array)
         {
             range_of_liquid_medicines[0] = min;
             range_of_liquid_medicines[1] = max;
+        }
+        else if (strcmp(varName, "num_employees") == 0)
+        {
+            num_employees[0] = min;
+            num_employees[1] = max;
         }
         else if (strcmp(varName, "range_of_pill_medicines") == 0)
         {
@@ -221,4 +227,28 @@ Date generate_random_date()
 
     Date random_date = {year, month, day};
     return random_date;
+}
+
+int readLiquidMedicinesFromFile(char *liquid_medicine_filename, Liq_Med *liquid_medicines)
+{
+    // Open the products file
+    FILE *file = fopen(liquid_medicine_filename, "r");
+    if (file == NULL)
+    {
+        perror("Error opening the liquid medicine file");
+        exit(1);
+    }
+
+    int i = 0;
+
+    while (fgets(tempLine, sizeof(tempLine), file) != NULL && i < MAX_NUM_BOTTLES)
+    {
+        // Split the line into the product ID and the product name
+        sscanf(tempLine, "%[^,], %d, %d, %d, %d", liquid_medicines[i].label.str, &liquid_medicines[i].min_level, &liquid_medicines[i].max_level, &liquid_medicines[i].min_color, &liquid_medicines[i].max_color);
+        printf("Liquid Medicine %d: %s, %d, %d, %d, %d\n", i + 1, liquid_medicines[i].label.str, liquid_medicines[i].min_level, liquid_medicines[i].max_level, liquid_medicines[i].min_color, liquid_medicines[i].max_color);
+        i++;
+    }
+    fclose(file); // closing the file
+
+    return i;
 }

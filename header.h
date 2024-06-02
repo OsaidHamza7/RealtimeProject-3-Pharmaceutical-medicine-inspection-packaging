@@ -24,6 +24,8 @@
 #include <math.h>
 
 #define FILE_NAME "arguments.txt"
+#define LIQUID_MEDICINES_FILE "liquid_medicines.txt"
+#define PILL_MEDICINES_FILE "pill_based_medicines.txt"
 
 #define MSGKEY_GUI 1234
 #define MAX_LINES 100
@@ -32,13 +34,15 @@
 
 #define MAX_NUM_LIQUID_PRODUCTION_LINES 100
 #define MAX_NUM_PILL_PRODUCTION_LINES 100
-#define MAX_NUM_LIQUID_MEDICINES 100
+#define MAX_NUM_BOTTLES 100
 #define MAX_NUM_PILL_MEDICINES 100
 #define MAX_NUM_PLASTIC_CONTAINERS 100
 #define MAX_NUM_PILLS 100
 
 #define SHKEY_LIQUID_PRODUCTION_LINES 1111
 #define SHKEY_PILL_PRODUCTION_LINES 2222
+#define SHKEY_LIQUID_MEDICINES 3333
+
 #define SHKEY_NUM_LIQUID_MEDICINES_PRODUCED 1234
 #define SHKEY_NUM_PILL_MEDICINES_PRODUCED 2345
 #define SHKEY_NUM_LIQUID_MEDICINES_FAILED 3456
@@ -74,10 +78,10 @@ struct msgbuf
     int b; // blue color
 };
 
-struct String
+typedef struct String
 {
     char str[MAX_LINE_LENGTH];
-};
+} String;
 
 typedef struct Pill
 {
@@ -90,63 +94,87 @@ typedef struct Plastic_Container
 {
     int id;
     int num_pills;
-    bool date_is_printed;
+    bool is_date_printed;
     Pill pills[MAX_NUM_PILLS];
 } Plastic_Container;
 
 typedef struct Liquid_Medicine
 {
-    int id;
-    int production_line_num;
     int level;
     int color;
-    bool is_sealed;
-    bool is_label_placed;
-    bool is_inspected;
-    bool is_failed;
-    bool is_medicine_placed;
-    bool is_prescription_placed;
-    bool date_is_printed;
-    Date expiry_date;
+
 } Liquid_Medicine;
 
-typedef struct Pill_Medicine
+typedef struct Bottle_Liquid_Medicine
 {
     int id;
-    int production_line_num;
+    String label;
+    bool is_sealed;
+    bool is_label_placed;
+    bool is_date_printed;
+    bool is_liquid_medicine_placed;
+    bool is_prescription_placed;
+    bool is_inspected;
+    bool is_packaged;
+    bool is_failed;
+    Liquid_Medicine liquid_medicine;
+    Date expiry_date;
+
+} Bottle_Liquid_Medicine;
+typedef struct Production_Line
+{
+    int id;
+    int num_employes;
+    int num_produced_medicines;
+    int num_successful_medicines;
+    int num_falied_medicines;
+    int speed;
+
+} Production_Line;
+
+typedef struct Liquid_Production_Line
+{
+    pid_t pid;
+    Production_Line production_line;
+    Bottle_Liquid_Medicine bottles[MAX_NUM_BOTTLES];
+
+} Liquid_Production_Line;
+
+typedef struct Pill_Based_Medicine
+{
+    int id;
     int num_plastic_containers;
-    Plastic_Container plastic_containers[MAX_NUM_PLASTIC_CONTAINERS];
     bool is_inspected;
     bool is_failed;
     bool prescription_is_added;
     bool is_packaged;
+    Plastic_Container plastic_containers[MAX_NUM_PLASTIC_CONTAINERS];
     Date Expiry_date;
+
 } Pill_Medicine;
 
 typedef struct Pill_Production_Line
 {
     pid_t pid;
-    int num;
-    int num_employes;
-    int num_medicines;
+    Production_Line production_line;
     Pill_Medicine pill_medicines[MAX_NUM_PILL_MEDICINES];
-    int speed;
+
 } Pill_Production_Line;
 
-typedef struct Liquid_Production_Line
+typedef struct Liq_Med
 {
-    pid_t pid;
-    int num;
-    int num_employes;
-    int num_medicines;
-    int speed;
-    Liquid_Medicine liquid_medicines[MAX_NUM_LIQUID_MEDICINES];
-} Liquid_Production_Line;
+    String label;
+    int min_level;
+    int max_level;
+    int min_color;
+    int max_color;
+
+} Liq_Med;
 
 // ===================================================================================
 extern int num_liquid_production_lines;
 extern int num_pill_production_lines;
-extern int num_employees;
+extern int num_employees[2];
 extern int range_speed_lines[2];
 extern int range_of_liquid_medicines[2];
 extern int range_of_pill_medicines[2];
@@ -167,8 +195,8 @@ extern int threshold_of_num_liquid_medicines_failed;
 extern int threshold_of_num_pill_medicines_failed;
 extern int simulation_threshold_time;
 // ====================================================================================
-void readArgumentsFromFile(char *filename);
 void readFromFile(const char *filename, int *array);
+int readLiquidMedicinesFromFile(char *liquid_medicine_filename, Liq_Med *liquid_medicines);
 char *trim(char *str);
 void killAllProcesses(int *arr_pid, int size);
 void split_string(char *argv, int arr[]);
