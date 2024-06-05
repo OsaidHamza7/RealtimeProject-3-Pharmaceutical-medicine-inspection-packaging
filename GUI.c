@@ -6,7 +6,7 @@
 #define LINE_SPACING 120
 #define BOX_SPACING 240
 #define WINDOW_WIDTH 1000
-#define WINDOW_HEIGHT 600
+#define WINDOW_HEIGHT 700
 #define TIMER_INTERVAL 2000
 
 enum ProductType
@@ -196,10 +196,44 @@ void drawPill(float x, float y, int numPills, int numColor, int medicine_num)
         glEnd();
     }
 }
-
-void drawTextLabel(const char *text, int x, int y)
-{
+void drawTextLabel(const char *text, float x, float y, void *font)
+{   
     glColor3f(1.0, 1.0, 1.0);
+    glRasterPos2f(x, y);
+    while (*text) {
+        glutBitmapCharacter(font, *text);
+        ++text;
+    }
+}
+
+void drawTextLabelWithColor(const char *text, int x, int y, int numColor)
+{
+    switch (numColor)
+    {
+    case 1:
+        glColor3f(0.0f, 0.75f, 1.0f); // RGB: (0, 191, 255)
+        break;
+    case 2:
+        glColor3f(0.86f, 0.08f, 0.24f); // RGB: (220, 20, 60)
+        break;
+    case 3:
+        glColor3f(0.13f, 0.55f, 0.13f); // RGB: (34, 139, 34)
+        break;
+    case 4:
+        glColor3f(0.85f, 0.65f, 0.13f); // RGB: (218, 165, 32)
+        break;
+    case 5:
+        glColor3f(0.58f, 0.44f, 0.86f); // RGB: (148, 112, 219)
+        break;
+    case 6:
+        glColor3f(1.0f, 0.39f, 0.28f); // RGB: (255, 99, 71)
+        break;
+    case 7:
+        glColor3f(0.25f, 0.88f, 0.82f); // RGB: (64, 224, 208)
+        break;
+    default:
+        glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
+    }
     glRasterPos2i(x, y);
     while (*text != '\0')
     {
@@ -218,11 +252,11 @@ void drawBox(float x, float y, int numMedicine, const char *label)
     glVertex2f(x, y + 30.0);
     glEnd();
 
-    drawTextLabel(label, x + 10, y + 10); // Adjusted label position
+    drawTextLabel(label, x + 10, y -3, GLUT_BITMAP_HELVETICA_12); // Adjusted label position
 
     char numText[20];
     snprintf(numText, sizeof(numText), "%d", numMedicine);
-    drawTextLabel(numText, x + 170, y + 10); // Adjusted number position
+    drawTextLabel(numText, x + 170, y - 8, GLUT_BITMAP_TIMES_ROMAN_24); // Adjusted number position
 
     glColor3f(1.0, 1.0, 1.0);
     glLineWidth(3.0);
@@ -230,6 +264,32 @@ void drawBox(float x, float y, int numMedicine, const char *label)
     glVertex2f(x, y - 30.0);
     glVertex2f(x + 200.0, y - 30.0);
     glVertex2f(x + 200.0, y + 30.0);
+    glVertex2f(x, y + 30.0);
+    glEnd();
+}
+
+void drawBoxProduced(float x, float y, int numMedicine, const char *label)
+{
+    glColor3f(0.0, 0.0, 0.0);
+    glBegin(GL_QUADS);
+    glVertex2f(x, y - 30.0);
+    glVertex2f(x + 440.0, y - 30.0); // Adjusted width
+    glVertex2f(x + 440.0, y + 30.0); // Adjusted size
+    glVertex2f(x, y + 30.0);
+    glEnd();
+
+    drawTextLabel(label, x + 10, y - 8, GLUT_BITMAP_TIMES_ROMAN_24); // Adjusted label position
+
+    char numText[20];
+    snprintf(numText, sizeof(numText), "%d", numMedicine);
+    drawTextLabel(numText, x + 410, y - 8, GLUT_BITMAP_TIMES_ROMAN_24); // Adjusted number position
+
+    glColor3f(1.0, 1.0, 1.0);
+    glLineWidth(3.0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x, y - 30.0);
+    glVertex2f(x + 440.0, y - 30.0);
+    glVertex2f(x + 440.0, y + 30.0);
     glVertex2f(x, y + 30.0);
     glEnd();
 }
@@ -284,17 +344,39 @@ void addNewMedicine(enum ProductType type, int line_num)
     // glutTimerFunc(TIMER_INTERVAL, addNewMedicine, 0);
 }
 
-void drawHuman(float x, float y)
+void drawHuman(float x, float y, int numColor)
 {
-    // Body
-    glColor3f(1.0, 1.0, 1.0);
+    switch (numColor)
+    {
+    case 1:
+        glColor3f(0.0f, 0.75f, 1.0f); // RGB: (0, 191, 255)
+        break;
+    case 2:
+        glColor3f(0.86f, 0.08f, 0.24f); // RGB: (220, 20, 60)
+        break;
+    case 3:
+        glColor3f(0.13f, 0.55f, 0.13f); // RGB: (34, 139, 34)
+        break;
+    case 4:
+        glColor3f(0.85f, 0.65f, 0.13f); // RGB: (218, 165, 32)
+        break;
+    case 5:
+        glColor3f(0.58f, 0.44f, 0.86f); // RGB: (148, 112, 219)
+        break;
+    case 6:
+        glColor3f(1.0f, 0.39f, 0.28f); // RGB: (255, 99, 71)
+        break;
+    case 7:
+        glColor3f(0.25f, 0.88f, 0.82f); // RGB: (64, 224, 208)
+        break;
+    default:
+        glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
+    }
     glBegin(GL_LINES);
     glVertex2f(x, y);
     glVertex2f(x, y - 40);
     glEnd();
 
-    // Head
-    glColor3f(1.0, 1.0, 1.0);
     glPointSize(7.0);
     glBegin(GL_POINTS);
     glVertex2f(x, y);
@@ -319,6 +401,63 @@ void drawHuman(float x, float y)
     glEnd();
 }
 
+/*void drawOnlyOneHuman(float x, float j, int numColor)
+{
+    switch (numColor)
+    {
+    case 1:
+        glColor3f(0.0f, 0.75f, 1.0f); // RGB: (0, 191, 255)
+        break;
+    case 2:
+        glColor3f(0.86f, 0.08f, 0.24f); // RGB: (220, 20, 60)
+        break;
+    case 3:
+        glColor3f(0.13f, 0.55f, 0.13f); // RGB: (34, 139, 34)
+        break;
+    case 4:
+        glColor3f(0.85f, 0.65f, 0.13f); // RGB: (218, 165, 32)
+        break;
+    case 5:
+        glColor3f(0.58f, 0.44f, 0.86f); // RGB: (148, 112, 219)
+        break;
+    case 6:
+        glColor3f(1.0f, 0.39f, 0.28f); // RGB: (255, 99, 71)
+        break;
+    case 7:
+        glColor3f(0.25f, 0.88f, 0.82f); // RGB: (64, 224, 208)
+        break;
+    default:
+        glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
+    }
+    glBegin(GL_LINES);
+    glVertex2f(x, y);
+    glVertex2f(x, y - 40);
+    glEnd();
+
+    glPointSize(7.0);
+    glBegin(GL_POINTS);
+    glVertex2f(x, y);
+    glEnd();
+
+    // Arms
+    glBegin(GL_LINES);
+    glVertex2f(x, y - 20);
+    glVertex2f(x - 15, y - 30);
+
+    glVertex2f(x, y - 20);
+    glVertex2f(x + 15, y - 30);
+    glEnd();
+
+    // Legs
+    glBegin(GL_LINES);
+    glVertex2f(x, y - 40);
+    glVertex2f(x - 10, y - 55);
+
+    glVertex2f(x, y - 40);
+    glVertex2f(x + 10, y - 55);
+    glEnd();
+}*/
+
 void init()
 {
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -335,14 +474,20 @@ void display()
     glLineWidth(2.0);
 
     float boxX = 20;
-    float boxY = 50;
+    float boxY = 140;
     drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_failed), "Failed Bottle Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Produced Bottle Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Packaged Bottle Medicine");
     boxX += BOX_SPACING;
     drawBox(boxX, boxY, numFailedPillMedicine, "Failed Pill Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, numSuccessfulPillMedicine, "Produced Pill Medicine");
+    drawBox(boxX, boxY, numSuccessfulPillMedicine, "Packaged Pill Medicine");
+
+    boxX = 20;
+    boxY = 60;
+    drawBoxProduced(boxX, boxY, numSuccessfulPillMedicine, "Produced Bottle Medicine");
+    boxX += 480;
+    drawBoxProduced(boxX, boxY, numSuccessfulPillMedicine, "Produced Pill Medicine");
 
     // check the shared memory for the liquid production lines,and if there is a new medicine, update the GUI
 
@@ -351,12 +496,21 @@ void display()
         float x = 50 + i * LINE_SPACING;
         glColor3f(1.0, 1.0, 1.0);
         glBegin(GL_LINES);
-        glVertex2f(x, 80.0);
-        glVertex2f(x, 550.0);
+        glVertex2f(x, 180.0);
+        glVertex2f(x, 650.0);
         glEnd();
 
+        int numColor = i +1;
         // Draw human figure next to the production line
-        drawHuman(x + 50, 300); // Adjusted position
+        
+        int numPeople = 5; // Number of people, you can modify this based on your logic
+        for (int j = 0; j < numPeople; ++j)
+        {
+            float personX = 50 + i * LINE_SPACING;
+            float personY = 640.0 - j * 88; // Adjusted spacing between people
+            drawHuman(personX + 50, personY, i + 1);
+        }
+
         int k = 0;
 
         char label[20];
@@ -372,7 +526,7 @@ void display()
                 }
 
                 float productX = x;
-                float productY = 500.0 - k * 80;
+                float productY = 600.0 - k * 80;
                 if (k > MEDICINES_PER_LINE - 1)
                 {
                     break;
@@ -380,6 +534,7 @@ void display()
                 k++;
                 drawLiquidBottle(productX, productY, (liquid_lines[i].bottles[j].liquid_medicine.level % 41) + 10, liquid_lines[i].bottles[j].liquid_medicine.color, j + 1);
             }
+            drawTextLabelWithColor(label, x - 27, 670, i+1);
         }
 
         else
@@ -394,7 +549,7 @@ void display()
                 }
 
                 float productX = x;
-                float productY = 500.0 - k * 80;
+                float productY = 600.0 - k * 80;
                 if (k > MEDICINES_PER_LINE - 1)
                 {
                     break;
@@ -402,8 +557,8 @@ void display()
                 k++;
                 drawPill(productX, productY, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].num_pills, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].pills[0].color, j + 1);
             }
+            drawTextLabelWithColor(label, x - 27, 670, i+1);
         }
-        drawTextLabel(label, x - 40, 570);
     }
     glFlush();
 }
