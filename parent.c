@@ -19,6 +19,7 @@ void createGUI();
 void createLiquidProductionLines();
 void createPillProductionLines();
 void thresholds_monitoring();
+void speed_monitoring();
 //***********************************************************************************
 int arr_of_arguments[MAX_LINES];
 int is_alarmed = 0;
@@ -85,6 +86,8 @@ int sem_num_liquid_medicines_failed;
 int sem_num_pill_medicines_failed;
 
 pthread_t thresholds_monitoring_thread;
+pthread_t speed_monitoring_thread;
+
 Liq_Med liquid_medicines[MAX_NUM_BOTTLES];
 Pill_Med pill_medicines[MAX_NUM_PILL_MEDICINES];
 
@@ -119,6 +122,17 @@ int main(int argc, char **argv)
     // craete a monitoring thread to keep track of the thresholds
     pthread_create(&thresholds_monitoring_thread, NULL, (void *)thresholds_monitoring, NULL);
 
+    // custom attributes for the thread to increase the stack size
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, 10000 * 10000);
+
+    if (pthread_create(&speed_monitoring_thread, &attr, (void *)speed_monitoring, NULL) != 0)
+    {
+        perror("Error: pthread_create failed\n");
+        exit(1);
+    }
+
     // set an alarm for the simulation threshold time
     alarm(simulation_threshold_time);
 
@@ -148,6 +162,7 @@ int main(int argc, char **argv)
     // }
 
     pthread_join(thresholds_monitoring_thread, NULL);
+    pthread_cancel(speed_monitoring_thread);
 
     exitProgram();
 
@@ -320,6 +335,9 @@ void initializeIPCResources()
     sem_num_pill_medicines_failed = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_FAILED, 1, 1, "parent.c");
 }
 
+/*
+function to monitor the thresholds of the simulation
+*/
 void thresholds_monitoring()
 {
     while (!is_end)
@@ -367,6 +385,184 @@ void thresholds_monitoring()
         releaseSem(sem_num_pill_medicines_failed, 0, "parent.c");
 
         sleep(1);
+    }
+
+    pthread_exit(0);
+}
+
+/*
+function to monitor the speed of the production lines to check if a production line is faster
+than the other so send an employee from the faster one to the slower one
+*/
+void speed_monitoring()
+{
+
+    // check the speed according to the num produced medicines
+    // sort all the production lines(liquid and pill) according to the num of produced medicines
+    // send an employee from the faster ones to the slower ones if the difference in the num of produced medicines is greater than 2
+    while (!is_end)
+    {
+
+        Liquid_Production_Line temp_liquid[5];
+        Pill_Production_Line temp_pill[5];
+
+        for (int i = 0; i < num_pill_production_lines; i++)
+        {
+            temp_pill[i].production_line.id = pill_production_lines[i].production_line.id;
+            temp_pill[i].production_line.num_produced_medicines = pill_production_lines[i].production_line.num_produced_medicines;
+            temp_pill[i].production_line.num_employes = pill_production_lines[i].production_line.num_employes;
+            // temp_pill[i].original_num_employes = pill_production_lines[i].original_num_employes;
+            temp_pill[i].production_line.speed = pill_production_lines[i].production_line.speed;
+            for (int j = 0; j < pill_production_lines[i].production_line.num_produced_medicines; j++)
+            {
+                temp_pill[i].pill_medicines[j] = pill_production_lines[i].pill_medicines[j];
+
+                for (int k = 0; k < pill_production_lines[i].pill_medicines[j].num_plastic_containers; k++)
+                {
+                    temp_pill[i].pill_medicines[j].plastic_containers[k] = pill_production_lines[i].pill_medicines[j].plastic_containers[k];
+
+                    for (int l = 0; l < pill_production_lines[i].pill_medicines[j].plastic_containers[k].num_pills; l++)
+                    {
+                        temp_pill[i].pill_medicines[j].plastic_containers[k].pills[l] = pill_production_lines[i].pill_medicines[j].plastic_containers[k].pills[l];
+                    }
+                }
+            }
+        }
+
+        printf("hi\n");
+        fflush(stdout);
+
+        // copy the production lines to the temp arrays
+        for (int i = 0; i < num_liquid_production_lines; i++)
+        {
+            temp_liquid[i].production_line.id = liquid_production_lines[i].production_line.id;
+            temp_liquid[i].production_line.num_produced_medicines = liquid_production_lines[i].production_line.num_produced_medicines;
+            temp_liquid[i].production_line.num_employes = liquid_production_lines[i].production_line.num_employes;
+            // temp_liquid[i].original_num_employes = liquid_production_lines[i].original_num_employes;
+            temp_liquid[i].production_line.speed = liquid_production_lines[i].production_line.speed;
+            for (int j = 0; j < liquid_production_lines[i].production_line.num_produced_medicines; j++)
+            {
+                temp_liquid[i].bottles[j] = liquid_production_lines[i].bottles[j];
+            }
+        }
+
+        // sort the liquid production lines
+        for (int i = 0; i < num_liquid_production_lines; i++)
+        {
+            for (int j = i + 1; j < num_liquid_production_lines; j++)
+            {
+                if (temp_liquid[i].production_line.num_produced_medicines < temp_liquid[j].production_line.num_produced_medicines)
+                {
+                    Liquid_Production_Line temp = temp_liquid[i];
+                    temp_liquid[i] = temp_liquid[j];
+                    temp_liquid[j] = temp;
+                }
+            }
+        }
+
+        // sort the pill production lines
+        for (int i = 0; i < num_pill_production_lines; i++)
+        {
+            for (int j = i + 1; j < num_pill_production_lines; j++)
+            {
+                if (temp_pill[i].production_line.num_produced_medicines < temp_pill[j].production_line.num_produced_medicines)
+                {
+                    Pill_Production_Line temp = temp_pill[i];
+                    temp_pill[i] = temp_pill[j];
+                    temp_pill[j] = temp;
+                }
+            }
+        }
+
+        // check the speed of the liquid production lines the first with last and second with second last and so on
+        for (int i = 0; i < num_liquid_production_lines / 2; i++)
+        {
+            if (temp_liquid[i].production_line.num_produced_medicines - temp_liquid[num_liquid_production_lines - i - 1].production_line.num_produced_medicines > 2)
+            {
+                // send an employee from the faster one to the slower one
+                acquireSem(sem_liquid_production_lines, 0, "parent.c");
+                liquid_production_lines[temp_liquid[i].production_line.id].production_line.num_employes--;
+                liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id].production_line.num_employes++;
+
+                // reduce the speed of production line of the faster one by a ratio of one employee to all original employees
+                liquid_production_lines[temp_liquid[i].production_line.id].production_line.speed = liquid_production_lines[temp_liquid[i].production_line.id].production_line.speed - (liquid_production_lines[temp_liquid[i].production_line.id].production_line.original_num_employes / 2);
+                // increase the speed of production line of the slower one by a ratio of one employee to all original employees
+                liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id].production_line.speed = liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id].production_line.speed + (liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id].production_line.original_num_employes / 2);
+
+                releaseSem(sem_liquid_production_lines, 0, "parent.c");
+            }
+        }
+
+        // check the speed of the pill production lines the first with last and second with second last and so on
+        for (int i = 0; i < num_pill_production_lines / 2; i++)
+        {
+            if (temp_pill[i].production_line.num_produced_medicines - temp_pill[num_pill_production_lines - i - 1].production_line.num_produced_medicines > 2)
+            {
+                // send an employee from the faster one to the slower one
+                acquireSem(sem_pill_production_lines, 0, "parent.c");
+                pill_production_lines[temp_pill[i].production_line.id].production_line.num_employes--;
+                pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id].production_line.num_employes++;
+
+                // send a signal to the production line to increase employee thread
+                kill(pids_pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id], SIGUSR1);
+                // send a signal to the production line to decrease employee thread
+                kill(pids_pill_production_lines[temp_pill[i].production_line.id], SIGUSR2);
+
+                // reduce the speed of production line of the faster one by a ratio of one employee to all original employees
+                pill_production_lines[temp_pill[i].production_line.id].production_line.speed = pill_production_lines[temp_pill[i].production_line.id].production_line.speed - (pill_production_lines[temp_pill[i].production_line.id].production_line.original_num_employes / 2);
+                // increase the speed of production line of the slower one by a ratio of one employee to all original employees
+                pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id].production_line.speed = pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id].production_line.speed + (pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id].production_line.original_num_employes / 2);
+
+                releaseSem(sem_pill_production_lines, 0, "parent.c");
+            }
+        }
+
+        sleep(3);
+
+        // return the employees to their original production lines
+        for (int i = 0; i < num_liquid_production_lines; i++)
+        {
+            acquireSem(sem_liquid_production_lines, 0, "parent.c");
+
+            // check if the number of employees is less than the original number of employees
+            if (liquid_production_lines[i].production_line.num_employes < liquid_production_lines[i].production_line.original_num_employes)
+            {
+                liquid_production_lines[i].production_line.num_employes++;
+                // send a signal to the production line to increase employee thread
+                kill(pids_liquid_production_lines[i], SIGUSR1);
+            }
+            else if (liquid_production_lines[i].production_line.num_employes > liquid_production_lines[i].production_line.original_num_employes)
+            {
+                liquid_production_lines[i].production_line.num_employes--;
+                // send a signal to the production line to decrease employee thread
+                kill(pids_liquid_production_lines[i], SIGUSR2);
+            }
+
+            releaseSem(sem_liquid_production_lines, 0, "parent.c");
+        }
+
+        for (int i = 0; i < num_pill_production_lines; i++)
+        {
+            acquireSem(sem_pill_production_lines, 0, "parent.c");
+
+            // check if the number of employees is less than the original number of employees
+            if (pill_production_lines[i].production_line.num_employes < pill_production_lines[i].production_line.original_num_employes)
+            {
+                pill_production_lines[i].production_line.num_employes++;
+                // send a signal to the production line to increase employee thread
+                kill(pids_pill_production_lines[i], SIGUSR1);
+            }
+            else if (pill_production_lines[i].production_line.num_employes > pill_production_lines[i].production_line.original_num_employes)
+            {
+                pill_production_lines[i].production_line.num_employes--;
+                // send a signal to the production line to decrease employee thread
+                kill(pids_pill_production_lines[i], SIGUSR2);
+            }
+
+            releaseSem(sem_pill_production_lines, 0, "parent.c");
+        }
+
+        sleep(2);
     }
 
     pthread_exit(0);
@@ -449,7 +645,7 @@ void exitProgram()
     deleteSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), shmptr_pill_production_lines);
     deleteSharedMemory(SHKEY_LIQUID_MEDICINES, num_liq_meds * sizeof(Liq_Med), shmptr_liquid_medicines);
     deleteSharedMemory(SHKEY_PILL_MEDICINES, num_pill_meds * sizeof(Pill_Med), shmptr_pill_medicines);
-    
+
     deleteSemaphore(sem_liquid_production_lines);
     deleteSemaphore(sem_pill_production_lines);
 

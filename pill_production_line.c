@@ -12,6 +12,8 @@ void packaging(Pill_Medicine *pill_medicines, int index_medicine);
 int get_index_of_uninspected_medicine(Pill_Medicine *pill_medicines);
 int get_index_expected_medicine(int indx);
 void printPillMedicine(Pill_Med *pill_medicines);
+void increase_employees();
+void decrease_employees();
 //***********************************************************************************
 
 int production_line_num;
@@ -29,6 +31,10 @@ int range_color_pills[2];
 Pill_Production_Line *pill_production_line;
 Pill_Production_Line *temp;
 Pill_Production_Line *pill_production_lines;
+
+pthread_t additional_employees[max_additional_employees];
+int additional_employees_head = 0;
+int additional_employees_tail = 0;
 
 char *shmptr_pill_production_lines;
 char *shmptr_num_pill_medicines_produced;
@@ -100,9 +106,10 @@ int main(int argc, char **argv)
         pthread_join(employees[i], NULL);
     }
 
-    // while (1)
-    // {
-    // }
+    while (1)
+    {
+        pause();
+    }
 
     pthread_join(create_pill_medicine_thread, NULL);
     sem_destroy(&mutex_pill_medcines);
@@ -139,6 +146,7 @@ void getInformation(char **argv)
     pill_production_line->pid = getpid();
     pill_production_line->production_line.id = production_line_num;
     pill_production_line->production_line.num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
+    pill_production_line->production_line.original_num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
     pill_production_line->production_line.speed = get_random_number(range_of_speed[0], range_of_speed[1]);
 
     releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
@@ -149,11 +157,46 @@ void getInformation(char **argv)
 
 void init_signals_handlers()
 {
-    /*if (sigset(SIGCLD, signal_handler) == -1)
-    { // set the signal handler for SIGINT
+    // signal handler for SIGUSR1 to increase the number of employees by 1
+    if (signal(SIGUSR1, increase_employees) == SIG_ERR)
+    {
         perror("Signal Error\n");
         exit(-1);
-    }*/
+    }
+
+    // signal handler for SIGUSR2 to decrease the number of employees by 1
+    if (signal(SIGUSR2, decrease_employees) == SIG_ERR)
+    {
+        perror("Signal Error\n");
+        exit(-1);
+    }
+}
+
+void increase_employees()
+{
+    acquireSem(sem_pill_production_lines, 0, "pill_production_line.c");
+
+    // create thread for the new employee
+    int emp_id = pill_production_line->production_line.num_employes;
+    pthread_create(&additional_employees[additional_employees_tail], NULL, (void *)employee, (void *)&emp_id);
+    additional_employees_tail = (additional_employees_tail + 1) % max_additional_employees;
+
+    releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
+    printf("Pill Production Line %d: Number of employees increased to %d\n", pill_production_line->production_line.id, pill_production_line->production_line.num_employes);
+    fflush(stdout);
+}
+
+void decrease_employees()
+{
+    acquireSem(sem_pill_production_lines, 0, "pill_production_line.c");
+
+    // kill first additional employee
+    pthread_cancel(additional_employees[additional_employees_head]);
+    additional_employees_head = (additional_employees_head + 1) % max_additional_employees;
+
+    releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
+    printf("Pill Production Line %d: Number of employees decreased to %d\n", pill_production_line->production_line.id, pill_production_line->production_line.num_employes);
+    fflush(stdout);
 }
 
 void employee(void *args)

@@ -11,6 +11,8 @@ int inspect_medicine(Bottle_Liquid_Medicine *bottles, int index_medicine, int in
 void package_medcine(Bottle_Liquid_Medicine *bottles, int index_medicine);
 void printLiquidMedicines();
 int get_index_expected_medicine(int indx);
+void decrease_employees(int signum);
+void increase_employees(int signum);
 //***********************************************************************************
 int production_line_num;
 int num_of_liquid_production_lines;
@@ -27,6 +29,10 @@ int max_produce_time = 10;
 Liquid_Production_Line *liquid_production_line;
 Liquid_Production_Line *temp;
 Liquid_Production_Line *liquid_production_lines;
+
+pthread_t additional_employees[max_additional_employees];
+int additional_employees_head = 0;
+int additional_employees_tail = 0;
 
 char *shmptr_liquid_production_lines;
 char *shmptr_num_liquid_medicines_produced;
@@ -98,9 +104,14 @@ int main(int argc, char **argv)
         pthread_join(employees[i], NULL);
     }
 
-    pthread_join(create_liquid_medicine_thread, NULL);
+    while (1)
+    {
+        pause();
+    }
 
+    pthread_join(create_liquid_medicine_thread, NULL);
     sem_destroy(&mutex_liquid_midicines);
+
     return 0;
 }
 
@@ -136,6 +147,7 @@ void getInformation(char **argv)
     liquid_production_line->pid = getpid();
     liquid_production_line->production_line.id = production_line_num;
     liquid_production_line->production_line.num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
+    liquid_production_line->production_line.original_num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
     liquid_production_line->production_line.speed = get_random_number(range_of_speed[0], range_of_speed[1]);
 
     releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
@@ -151,6 +163,47 @@ void init_signals_handlers()
         perror("Signal Error\n");
         exit(-1);
     }*/
+
+    if (signal(SIGUSR1, increase_employees) == SIG_ERR)
+    { // set the signal handler for SIGUSR1
+        perror("Signal Error\n");
+        exit(-1);
+    }
+
+    if (signal(SIGUSR2, decrease_employees) == SIG_ERR)
+    { // set the signal handler for SIGUSR2
+        perror("Signal Error\n");
+        exit(-1);
+    }
+}
+
+void increase_employees(int signum)
+{
+    // increase the employees threads
+    acquireSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
+
+    // create thread for the new employee
+    int emp_id = liquid_production_line->production_line.num_employes;
+    pthread_create(&additional_employees[additional_employees_tail], NULL, (void *)employee, (void *)&emp_id);
+    additional_employees_tail = (additional_employees_tail + 1) % max_additional_employees;
+
+    releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
+    printf("Employee %d is added to the liquid production line %d\n", emp_id, liquid_production_line->production_line.id);
+    fflush(stdout);
+}
+
+void decrease_employees(int signum)
+{
+    // decrease the employees threads
+    acquireSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
+
+    // kill the first employee thread
+    pthread_cancel(additional_employees[additional_employees_head]);
+    additional_employees_head = (additional_employees_head + 1) % max_additional_employees;
+
+    releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
+    printf("Employee is removed from the liquid production line %d\n", liquid_production_line->production_line.id);
+    fflush(stdout);
 }
 
 void employee(void *args)

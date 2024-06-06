@@ -31,6 +31,8 @@
 #define MAX_LINES 100
 #define MAX_LINE_LENGTH 255
 #define NUM_SEMAPHORES 2
+#define max_additional_employees 10
+
 
 #define MAX_NUM_LIQUID_PRODUCTION_LINES 100
 #define MAX_NUM_PILL_PRODUCTION_LINES 100
@@ -127,6 +129,7 @@ typedef struct Production_Line
 {
     int id;
     int num_employes;
+    int original_num_employes;
     int num_produced_medicines;
     int num_successful_medicines;
     int num_falied_medicines;
