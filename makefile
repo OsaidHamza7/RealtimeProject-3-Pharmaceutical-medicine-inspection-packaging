@@ -3,9 +3,9 @@ CFLAGS = -g -Wall
 ARGS= arguments.txt
 UILIBS = -lglut -lGLU -lGL -lm  -lrt
 LIBS = -lpthread
-NAMES = parent liquid_production_line  GUI
+NAMES = parent pill_production_line liquid_production_line GUI
 
-all: parent liquid_production_line  GUI
+all: parent pill_production_line liquid_production_line GUI
 
 parent: parent.c functions.c ipcs.c 
 	$(CC) $(CFLAGS) -o parent parent.c functions.c ipcs.c  $(LIBS)

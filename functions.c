@@ -245,7 +245,31 @@ int readLiquidMedicinesFromFile(char *liquid_medicine_filename, Liq_Med *liquid_
     {
         // Split the line into the product ID and the product name
         sscanf(tempLine, "%[^,], %d, %d, %d, %d", liquid_medicines[i].label.str, &liquid_medicines[i].min_level, &liquid_medicines[i].max_level, &liquid_medicines[i].min_color, &liquid_medicines[i].max_color);
-        printf("Liquid Medicine %d: %s, %d, %d, %d, %d\n", i + 1, liquid_medicines[i].label.str, liquid_medicines[i].min_level, liquid_medicines[i].max_level, liquid_medicines[i].min_color, liquid_medicines[i].max_color);
+       // printf("Liquid Medicine %d: %s, %d, %d, %d, %d\n", i + 1, liquid_medicines[i].label.str, liquid_medicines[i].min_level, liquid_medicines[i].max_level, liquid_medicines[i].min_color, liquid_medicines[i].max_color);
+        i++;
+    }
+    fclose(file); // closing the file
+
+    return i;
+}
+
+int readPillMedicinesFromFile(char *pill_medicine_filename, Pill_Med *pill_medicines)
+{
+    // Open the products file
+    FILE *file = fopen(pill_medicine_filename, "r");
+    if (file == NULL)
+    {
+        perror("Error opening the liquid medicine file");
+        exit(1);
+    }
+
+    int i = 0;
+
+    while (fgets(tempLine, sizeof(tempLine), file) != NULL && i < MAX_NUM_PILL_MEDICINES)
+    {
+        // Split the line into the product ID and the product name
+        sscanf(tempLine, "%[^,], %d, %d, %d, %d, %d, %d", pill_medicines[i].label.str, &pill_medicines[i].num_containers, &pill_medicines[i].num_pills, &pill_medicines[i].min_size, &pill_medicines[i].max_size, &pill_medicines[i].min_color, &pill_medicines[i].max_color);
+        //printf("Pill Medicine %d: %s, %d, %d, %d, %d, %d, %d\n", i + 1, pill_medicines[i].label.str, pill_medicines[i].num_containers, pill_medicines[i].num_pills, pill_medicines[i].min_size, pill_medicines[i].max_size, pill_medicines[i].min_color, pill_medicines[i].max_color);
         i++;
     }
     fclose(file); // closing the file

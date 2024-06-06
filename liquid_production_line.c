@@ -177,7 +177,7 @@ void employee(void *args)
         printf("index_expected_medicine %d\n", index_expected_medicine);
         printf("Employee %d in liquid line %d inspects the medicine %d\n", *emp_id, liquid_production_line->production_line.id, index_uninspected_medicine + 1);
         int j = inspect_medicine(liquid_production_line->bottles, index_uninspected_medicine, index_expected_medicine);
-        sleep(3); // sleep for 3 seconds to simulate the inspection process
+        sleep(20); // sleep for 3 seconds to simulate the inspection process
 
         // the inspection for this medicine is failed
         if (j == 0)
@@ -222,7 +222,7 @@ void createLiquidMedicines()
         int indx = rand() % num_liq_meds;
         liquid_production_line->bottles[j].label = liq_medicines[indx].label;
 
-        liquid_production_line->production_line.num_produced_medicines++;
+        liquid_production_line->production_line.num_produced_medicines += 1;
         *shmptr_num_liquid_medicines_produced += 1;
 
         releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
@@ -240,6 +240,7 @@ int get_index_of_uninspected_medicine(Bottle_Liquid_Medicine *bottles)
         if (bottles[i].is_inspected == 0)
         {
             printf("Liquid Medicine %d label %s in line %d is inspecting\n", bottles[i].id, bottles[i].label.str, liquid_production_line->production_line.id);
+            sleep(1);
             bottles[i].is_inspected = 1;
             return i; // return the index of the uninspected medicine to inspect it
         }

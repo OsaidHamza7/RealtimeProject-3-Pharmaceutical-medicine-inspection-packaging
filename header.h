@@ -42,6 +42,7 @@
 #define SHKEY_LIQUID_PRODUCTION_LINES 1111
 #define SHKEY_PILL_PRODUCTION_LINES 2222
 #define SHKEY_LIQUID_MEDICINES 3333
+#define SHKEY_PILL_MEDICINES 4444
 
 #define SHKEY_NUM_LIQUID_MEDICINES_PRODUCED 1234
 #define SHKEY_NUM_PILL_MEDICINES_PRODUCED 2345
@@ -121,6 +122,7 @@ typedef struct Bottle_Liquid_Medicine
     Date expiry_date;
 
 } Bottle_Liquid_Medicine;
+
 typedef struct Production_Line
 {
     int id;
@@ -140,16 +142,17 @@ typedef struct Liquid_Production_Line
 
 } Liquid_Production_Line;
 
-typedef struct Pill_Based_Medicine
+typedef struct Pill_Medicine
 {
     int id;
+    String label;
     int num_plastic_containers;
+    bool is_prescription_placed;
     bool is_inspected;
     bool is_failed;
-    bool prescription_is_added;
     bool is_packaged;
     Plastic_Container plastic_containers[MAX_NUM_PLASTIC_CONTAINERS];
-    Date Expiry_date;
+    Date expiry_date;
 
 } Pill_Medicine;
 
@@ -171,6 +174,17 @@ typedef struct Liq_Med
 
 } Liq_Med;
 
+typedef struct Pill_Med
+{
+    String label;
+    int num_containers;
+    int num_pills;
+    int min_size;
+    int max_size;
+    int min_color;
+    int max_color;
+
+} Pill_Med;
 // ===================================================================================
 extern int num_liquid_production_lines;
 extern int num_pill_production_lines;
@@ -197,6 +211,7 @@ extern int simulation_threshold_time;
 // ====================================================================================
 void readFromFile(const char *filename, int *array);
 int readLiquidMedicinesFromFile(char *liquid_medicine_filename, Liq_Med *liquid_medicines);
+int readPillMedicinesFromFile(char *pill_medicine_filename, Pill_Med *pill_medicines);
 char *trim(char *str);
 void killAllProcesses(int *arr_pid, int size);
 void split_string(char *argv, int arr[]);

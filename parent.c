@@ -57,6 +57,7 @@ char str_range_expected_color[20];
 char str_range_expected_size_pill[20];
 char str_range_expected_color_pill[20];
 char str_num_liq_med[10];
+char str_num_pill_med[10];
 
 // IPCs resources
 
@@ -71,6 +72,7 @@ char *shmptr_num_liquid_medicines_failed;
 char *shmptr_num_pill_medicines_failed;
 char *shmptr_num_liquid_medicines_packaged;
 char *shmptr_liquid_medicines;
+char *shmptr_pill_medicines;
 
 // shared memories for thresholds
 
@@ -84,7 +86,10 @@ int sem_num_pill_medicines_failed;
 
 pthread_t thresholds_monitoring_thread;
 Liq_Med liquid_medicines[MAX_NUM_BOTTLES];
+Pill_Med pill_medicines[MAX_NUM_PILL_MEDICINES];
+
 int num_liq_meds = 0;
+int num_pill_meds = 0;
 
 int main(int argc, char **argv)
 {
@@ -94,17 +99,18 @@ int main(int argc, char **argv)
 
     // Start the program
     printf("*******************************************\nStart the program, My process ID is %d\n\n", getpid());
-    
+
     // check a number of arguments,and read a file name
     checkArguments(argc, argv, file_arguments, file_liquid_medicines, file_pill_medicines);
 
     // to read from User defined numbers file (filename.txt)
     readFromFile(file_arguments, arr_of_arguments);
     num_liq_meds = readLiquidMedicinesFromFile(file_liquid_medicines, liquid_medicines);
+    num_pill_meds = readPillMedicinesFromFile(file_pill_medicines, pill_medicines);
 
     // get the arguments from the file
     getArguments(arr_of_arguments);
-    printArguments();
+    // printArguments();
 
     // initialize IPCs resources (shared memory, semaphores, message queues)
     initializeIPCResources();
@@ -119,7 +125,7 @@ int main(int argc, char **argv)
     // create the GUI
     createGUI();
     createLiquidProductionLines();
-    //  createPillProductionLines();
+    createPillProductionLines();
 
     /*
     join the monitoring thread to the main thread to keep the program
@@ -209,7 +215,6 @@ void createLiquidProductionLines()
 
 void createPillProductionLines()
 {
-
     for (i = 0; i < num_pill_production_lines; i++)
     {
         switch (pid = fork())
@@ -235,8 +240,9 @@ void createPillProductionLines()
 
             sprintf(str_range_expected_size_pill, " %d %d", range_expected_pill_medicine_size[0], range_expected_pill_medicine_size[1]);
             sprintf(str_range_expected_color_pill, " %d %d", range_expected_pill_medicine_color[0], range_expected_pill_medicine_color[1]);
+            sprintf(str_num_pill_med, "%d", num_pill_meds);
 
-            execlp("./pill_production_line", "pill_production_line", production_line_num, str_num_pill_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_num_plastic_containers, str_num_pills, str_range_size_pill, str_range_color_pill, NULL);
+            execlp("./pill_production_line", "pill_production_line", production_line_num, str_num_pill_lines, str_num_employees, str_range_num_midicines, str_range_of_speeds, str_num_plastic_containers, str_num_pills, str_range_size_pill, str_range_color_pill, str_num_pill_med, NULL);
             perror("Error:Execute Pill Production Line Failed.\n");
             exit(1);
             break;
@@ -285,6 +291,7 @@ void initializeIPCResources()
     shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), "parent.c");
     shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), "parent.c");
     shmptr_liquid_medicines = createSharedMemory(SHKEY_LIQUID_MEDICINES, num_liq_meds * sizeof(Liq_Med), "parent.c");
+    shmptr_pill_medicines = createSharedMemory(SHKEY_PILL_MEDICINES, num_pill_meds * sizeof(Pill_Med), "parent.c");
 
     shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "parent.c");
     shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "parent.c");
@@ -301,6 +308,7 @@ void initializeIPCResources()
     memcpy(shmptr_num_liquid_medicines_failed, &x, sizeof(int));
     memcpy(shmptr_num_liquid_medicines_packaged, &x, sizeof(int));
     memcpy(shmptr_liquid_medicines, liquid_medicines, num_liq_meds * sizeof(Liq_Med));
+    memcpy(shmptr_pill_medicines, pill_medicines, num_pill_meds * sizeof(Pill_Med));
 
     // Create a Semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "parent.c");
@@ -430,7 +438,7 @@ void exitProgram()
 
     // kill all the child processes
     killAllProcesses(pids_liquid_production_lines, num_liquid_production_lines);
-    // killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
+    killAllProcesses(pids_pill_production_lines, num_pill_production_lines);
     killAllProcesses(pid_gui, 1);
     printf("All child processes killed\n");
 
@@ -440,7 +448,8 @@ void exitProgram()
     deleteSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), shmptr_liquid_production_lines);
     deleteSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), shmptr_pill_production_lines);
     deleteSharedMemory(SHKEY_LIQUID_MEDICINES, num_liq_meds * sizeof(Liq_Med), shmptr_liquid_medicines);
-
+    deleteSharedMemory(SHKEY_PILL_MEDICINES, num_pill_meds * sizeof(Pill_Med), shmptr_pill_medicines);
+    
     deleteSemaphore(sem_liquid_production_lines);
     deleteSemaphore(sem_pill_production_lines);
 

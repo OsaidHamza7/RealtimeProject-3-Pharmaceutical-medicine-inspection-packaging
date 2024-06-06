@@ -28,10 +28,12 @@ int numSuccessfulPillMedicine = 0;     // Number of successful pill medicine
 char *shmptr_liquid_production_lines;
 char *shmptr_num_liquid_medicines_produced;
 char *shmptr_num_liquid_medicines_failed;
+char *shmptr_num_liquid_medicines_packaged;
 
 char *shmptr_pill_production_lines;
 char *shmptr_num_pill_medicines_produced;
 char *shmptr_num_pill_medicines_failed;
+char *shmptr_num_pill_medicines_packaged;
 
 int sem_liquid_production_lines;
 int sem_num_liquid_medicines_produced;
@@ -197,10 +199,11 @@ void drawPill(float x, float y, int numPills, int numColor, int medicine_num)
     }
 }
 void drawTextLabel(const char *text, float x, float y, void *font)
-{   
+{
     glColor3f(1.0, 1.0, 1.0);
     glRasterPos2f(x, y);
-    while (*text) {
+    while (*text)
+    {
         glutBitmapCharacter(font, *text);
         ++text;
     }
@@ -252,7 +255,7 @@ void drawBox(float x, float y, int numMedicine, const char *label)
     glVertex2f(x, y + 30.0);
     glEnd();
 
-    drawTextLabel(label, x + 10, y -3, GLUT_BITMAP_HELVETICA_12); // Adjusted label position
+    drawTextLabel(label, x + 10, y - 3, GLUT_BITMAP_HELVETICA_12); // Adjusted label position
 
     char numText[20];
     snprintf(numText, sizeof(numText), "%d", numMedicine);
@@ -372,6 +375,7 @@ void drawHuman(float x, float y, int numColor)
     default:
         glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
     }
+
     glBegin(GL_LINES);
     glVertex2f(x, y);
     glVertex2f(x, y - 40);
@@ -386,7 +390,6 @@ void drawHuman(float x, float y, int numColor)
     glBegin(GL_LINES);
     glVertex2f(x, y - 20);
     glVertex2f(x - 15, y - 30);
-
     glVertex2f(x, y - 20);
     glVertex2f(x + 15, y - 30);
     glEnd();
@@ -477,17 +480,17 @@ void display()
     float boxY = 140;
     drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_failed), "Failed Bottle Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Packaged Bottle Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_liquid_medicines_packaged), "Packaged Bottle Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, numFailedPillMedicine, "Failed Pill Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_pill_medicines_failed), "Failed Pill Medicine");
     boxX += BOX_SPACING;
-    drawBox(boxX, boxY, numSuccessfulPillMedicine, "Packaged Pill Medicine");
+    drawBox(boxX, boxY, (int)(*shmptr_num_pill_medicines_packaged), "Packaged Pill Medicine");
 
     boxX = 20;
     boxY = 60;
-    drawBoxProduced(boxX, boxY, numSuccessfulPillMedicine, "Produced Bottle Medicine");
+    drawBoxProduced(boxX, boxY, (int)(*shmptr_num_liquid_medicines_produced), "Produced Bottle Medicine");
     boxX += 480;
-    drawBoxProduced(boxX, boxY, numSuccessfulPillMedicine, "Produced Pill Medicine");
+    drawBoxProduced(boxX, boxY, (int)(*shmptr_num_pill_medicines_produced), "Produced Pill Medicine");
 
     // check the shared memory for the liquid production lines,and if there is a new medicine, update the GUI
 
@@ -500,15 +503,24 @@ void display()
         glVertex2f(x, 650.0);
         glEnd();
 
-        int numColor = i +1;
-        // Draw human figure next to the production line
-        
-        int numPeople = 5; // Number of people, you can modify this based on your logic
+        int numColor = i + 1;
+
+        int numPeople = 0; // Number of people, you can modify this based on your logic
+
+        if (i < 4)
+        {
+            numPeople = liquid_lines[i].production_line.num_employes;
+        }
+        else
+        {
+            numPeople = pill_lines[i - 4].production_line.num_employes;
+        }
+
         for (int j = 0; j < numPeople; ++j)
         {
             float personX = 50 + i * LINE_SPACING;
             float personY = 640.0 - j * 88; // Adjusted spacing between people
-            drawHuman(personX + 50, personY, i + 1);
+            drawHuman(personX + 50, personY, numColor);
         }
 
         int k = 0;
@@ -520,7 +532,7 @@ void display()
             k = 0;
             for (int j = 0; j < liquid_lines[i].production_line.num_produced_medicines; j++)
             {
-                if (liquid_lines[i].bottles[j].is_failed == 1)
+                if (liquid_lines[i].bottles[j].is_inspected == 1)
                 {
                     continue;
                 }
@@ -534,7 +546,7 @@ void display()
                 k++;
                 drawLiquidBottle(productX, productY, (liquid_lines[i].bottles[j].liquid_medicine.level % 41) + 10, liquid_lines[i].bottles[j].liquid_medicine.color, j + 1);
             }
-            drawTextLabelWithColor(label, x - 27, 670, i+1);
+            drawTextLabelWithColor(label, x - 27, 670, i + 1);
         }
 
         else
@@ -543,7 +555,7 @@ void display()
             k = 0;
             for (int j = 0; j < pill_lines[i - 4].production_line.num_produced_medicines; j++)
             {
-                if (pill_lines[i - 4].pill_medicines[j].is_failed == 1)
+                if (pill_lines[i - 4].pill_medicines[j].is_inspected == 1)
                 {
                     continue;
                 }
@@ -557,9 +569,10 @@ void display()
                 k++;
                 drawPill(productX, productY, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].num_pills, pill_lines[i - 4].pill_medicines[j].plastic_containers[0].pills[0].color, j + 1);
             }
-            drawTextLabelWithColor(label, x - 27, 670, i+1);
+            drawTextLabelWithColor(label, x - 27, 670, i + 1);
         }
     }
+
     glFlush();
 }
 
@@ -583,9 +596,11 @@ int main(int argc, char **argv)
 
     shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "GUI.c");
     shmptr_num_liquid_medicines_failed = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), "GUI.c");
+    shmptr_num_liquid_medicines_packaged = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PACKAGED, sizeof(int), "GUI.c");
 
     shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "GUI.c");
     shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "GUI.c");
+    shmptr_num_pill_medicines_packaged = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PACKAGED, sizeof(int), "GUI.c");
 
     // shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "liquid_production_line.c");
     // shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
