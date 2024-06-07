@@ -25,8 +25,8 @@ int range_number_of_medicines[2];
 int range_plastic_containers[2];
 int range_pills[2];
 
-int range_size_pills[2];
-int range_color_pills[2];
+int range_of_size_pills[2];
+int range_of_color_pills[2];
 
 Pill_Production_Line *pill_production_line;
 Pill_Production_Line *temp;
@@ -45,6 +45,7 @@ char *shmptr_pill_medicines;
 int sem_pill_production_lines;
 int sem_num_pill_medicines_produced;
 int sem_num_pill_medicines_failed;
+int sem_num_pill_medicines_packaged;
 
 sem_t mutex_pill_medcines;
 int max_produce_time = 10;
@@ -75,10 +76,13 @@ int main(int argc, char **argv)
 
     shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "pill_production_line.c");
     shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "pill_production_line.c");
-    shmptr_num_pill_medicines_packaged = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PACKAGED, sizeof(int), "liquid_production_line.c");
+    shmptr_num_pill_medicines_packaged = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PACKAGED, sizeof(int), "pill_production_line.c");
 
     // Open the semaphores
     sem_pill_production_lines = createSemaphore(SEMKEY_PILL_PRODUCTION_LINES, 1, 1, "pill_production_line.c");
+    sem_num_pill_medicines_produced = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_PRODUCED, 1, 1, "pill_production_line.c");
+    sem_num_pill_medicines_failed = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_FAILED, 1, 1, "pill_production_line.c");
+    sem_num_pill_medicines_packaged = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_PACKAGED, 1, 1, "pill_production_line.c");
 
     // get information from the arguments
     getInformation(argv);
@@ -127,26 +131,15 @@ void getInformation(char **argv)
     split_string(argv[5], range_of_speed);
     split_string(argv[6], range_plastic_containers);
     split_string(argv[7], range_pills);
-    split_string(argv[8], range_size_pills);
-    split_string(argv[9], range_color_pills);
+    split_string(argv[8], range_of_size_pills);
+    split_string(argv[9], range_of_color_pills);
 
-    /*printf("=====================================================================\n");
-    // print the information of the pill production line
-    printf("Pill Production Line %d\n", production_line_num);
-    printf("Number of employees: %d - %d\n", number_of_employees[0], number_of_employees[1]);
-    printf("Speed: %d - %d\n", range_of_speed[0], range_of_speed[1]);
-    printf("Plastic Containers: %d - %d\n", range_plastic_containers[0], range_plastic_containers[1]);
-    printf("Pills: %d - %d\n", range_pills[0], range_pills[1]);
-    printf("Size of Pills: %d - %d\n", range_size_pills[0], range_size_pills[1]);
-    printf("Color of Pills: %d - %d\n\n", range_color_pills[0], range_color_pills[1]);
-    fflush(stdout);
-*/
     acquireSem(sem_pill_production_lines, 0, "pill_production_line.c");
 
     pill_production_line->pid = getpid();
     pill_production_line->production_line.id = production_line_num;
     pill_production_line->production_line.num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
-    pill_production_line->production_line.original_num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
+    pill_production_line->production_line.original_num_employes = pill_production_line->production_line.num_employes;
     pill_production_line->production_line.speed = get_random_number(range_of_speed[0], range_of_speed[1]);
 
     releaseSem(sem_pill_production_lines, 0, "pill_production_line.c");
@@ -222,7 +215,7 @@ void employee(void *args)
 
         printf("Employee %d in pill line %d inspects the medicine %d\n", *emp_id, pill_production_line->production_line.id, index_uninspected_medicine + 1);
         int j = make_inspection(index_uninspected_medicine, index_expected_medicine);
-        sleep(20); // sleep for 3 seconds to simulate the inspection process
+        sleep(5); // sleep for 5 seconds to simulate the inspection process
         printf("Employee %d in pill line %d finish inspects the medicine %d\n", *emp_id, pill_production_line->production_line.id, index_uninspected_medicine + 1);
 
         if (j == 0) // the inspection is failed
@@ -232,16 +225,13 @@ void employee(void *args)
             *shmptr_num_pill_medicines_failed += 1;
             continue;
         }
-        // printf("Pill Medicine %d in line %d is passed the inspection successfully\n", pill_production_line->pill_medicines[index_uninspected_medicine].id, pill_production_line->production_line.id);
 
-        // the inspection is successful go to the packaging
+        printf("Pill Medicine %d in line %d is passed the inspection successfully\n", pill_production_line->pill_medicines[index_uninspected_medicine].id, pill_production_line->production_line.id);
         // packaging the medicines
-
         printf("Employee %d in pill line %d packages the medicine\n", *emp_id, pill_production_line->production_line.id);
         packaging(pill_production_line->pill_medicines, index_uninspected_medicine);
-        sleep(3); // sleep for 3 seconds to simulate the packaging process
-        *shmptr_num_pill_medicines_packaged += 1;
-        // printf("pill Medicine %d in line %d is packaged successfully\n", pill_production_line->pill_medicines[index_uninspected_medicine].id, pill_production_line->production_line.id);
+        sleep(1); // sleep for 1 seconds to simulate the packaging process
+        printf("pill Medicine %d in line %d is packaged successfully\n", pill_production_line->pill_medicines[index_uninspected_medicine].id, pill_production_line->production_line.id);
         fflush(stdout);
     }
 }
@@ -257,22 +247,27 @@ void createPillMedicines()
         acquireSem(sem_pill_production_lines, 0, "pill_production_line.c");
 
         pill_production_line->pill_medicines[i].id = i + 1;
-        pill_production_line->pill_medicines[i].num_plastic_containers = get_random_number(range_of_plastic_containers[0], range_of_plastic_containers[1]);
+        pill_production_line->pill_medicines[i].num_plastic_containers = get_random_number(range_plastic_containers[0], range_plastic_containers[1]);
         pill_production_line->pill_medicines[i].is_inspected = 0;
+        pill_production_line->pill_medicines[i].plastic_containers[0].num_pills = get_random_number(range_pills[0], range_pills[1]);
+        pill_production_line->pill_medicines[i].plastic_containers[0].pills[0].color = get_random_number(range_of_color_pills[0], range_of_color_pills[1]);
+        pill_production_line->pill_medicines[i].plastic_containers[0].pills[0].size = get_random_number(range_of_size_pills[0], range_of_size_pills[1]);
+        pill_production_line->pill_medicines[i].plastic_containers[0].is_date_printed = rand() % 20 < 18 ? 1 : 0;
+
         for (int j = 0; j < pill_production_line->pill_medicines[i].num_plastic_containers; j++)
         {
             pill_production_line->pill_medicines[i].plastic_containers[j].id = j + 1;
-            pill_production_line->pill_medicines[i].plastic_containers[j].num_pills = get_random_number(range_of_pills[0], range_of_pills[1]);
+            pill_production_line->pill_medicines[i].plastic_containers[j].num_pills = pill_production_line->pill_medicines[i].plastic_containers[0].num_pills;
+            pill_production_line->pill_medicines[i].plastic_containers[j].is_date_printed = pill_production_line->pill_medicines[i].plastic_containers[0].is_date_printed;
             for (int k = 0; k < pill_production_line->pill_medicines[i].plastic_containers[j].num_pills; k++)
             {
                 pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].id = k + 1;
-                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].color = get_random_number(range_color_pill[0], range_color_pill[1]);
-                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].size = get_random_number(range_size_pill[0], range_size_pill[1]);
+                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].color = pill_production_line->pill_medicines[i].plastic_containers[0].pills[0].color;
+                pill_production_line->pill_medicines[i].plastic_containers[j].pills[k].size = pill_production_line->pill_medicines[i].plastic_containers[0].pills[0].size;
             }
         }
 
         pill_production_line->pill_medicines[i].expiry_date = generate_random_date();
-        pill_production_line->pill_medicines[i].plastic_containers->is_date_printed = rand() % 10 < 8 ? 1 : 0;
 
         int indx = rand() % num_pill_meds;
         pill_production_line->pill_medicines[i].label = pill_medicines[indx].label;
@@ -304,8 +299,10 @@ void createPillMedicines()
 // Make an inspection function for the pill production line to check No plastic container is missing any pill, Pills in the plastic containers have the correct color and size and Medicine expiry date is clearly printed on the plastic container label
 int make_inspection(int index_medicine, int index_expected_medicine)
 {
+
     // check for each medicine in the production line
     // printf("Expected Pill Medicine %s with num of plastic containers %d, num of pills %d, range of size %d - %d, range of color %d - %d\n", pill_medicines[index_expected_medicine].label.str, pill_medicines[index_expected_medicine].num_containers, pill_medicines[index_expected_medicine].num_pills, pill_medicines[index_expected_medicine].min_size, pill_medicines[index_expected_medicine].max_size, pill_medicines[index_expected_medicine].min_color, pill_medicines[index_expected_medicine].max_color);
+    printf("num of plastic containers %d\n", pill_production_line->pill_medicines[index_medicine].num_plastic_containers);
 
     if (pill_production_line->pill_medicines[index_medicine].num_plastic_containers == pill_medicines[index_expected_medicine].num_containers)
     {
@@ -313,6 +310,7 @@ int make_inspection(int index_medicine, int index_expected_medicine)
     }
     else
     {
+        printf("NOT in expected range of number of plastic containers\n");
         // printf("Pill Medicine %d in line %d is NOT in expected range of number of plastic containers\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
         return 0;
     }
@@ -325,6 +323,7 @@ int make_inspection(int index_medicine, int index_expected_medicine)
         }
         else
         {
+            printf("NOT in expected range of number of pills\n");
             // printf("Pill Medicine %d in line %d is NOT in expected range of number of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
             return 0;
         }
@@ -332,12 +331,10 @@ int make_inspection(int index_medicine, int index_expected_medicine)
         if (pill_production_line->pill_medicines[index_medicine].plastic_containers[j].is_date_printed == 0)
         {
             // printf("Pill Medicine %d in line %d does NOT have an expiry date in thE back of the container\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
+            printf("NOT have an expiry date\n");
             return 0;
         }
-        else
-        {
-            // printf("Pill Medicine %d in line %d has an expiry date in the back of the container\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
-        }
+
         // Pills in the plastic containers have the correct color and size
         for (int k = 0; k < pill_production_line->pill_medicines[index_medicine].plastic_containers[j].num_pills; k++)
         {
@@ -347,6 +344,7 @@ int make_inspection(int index_medicine, int index_expected_medicine)
             }
             else
             {
+                printf("NOT in expected range of color of pills\n");
                 // printf("Pill Medicine %d in line %d is NOT in expected range of color of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 return 0;
             }
@@ -357,6 +355,7 @@ int make_inspection(int index_medicine, int index_expected_medicine)
             }
             else
             {
+                printf("NOT in expected range of size of pills\n");
                 // printf("Pill Medicine %d in line %d is NOT in expected range of size of pills\n", pill_medicines[index_medicine].id, pill_medicines[index_medicine].production_line_num);
                 return 0;
             }
@@ -368,10 +367,20 @@ int make_inspection(int index_medicine, int index_expected_medicine)
 
 void packaging(Pill_Medicine *pill_medicines, int index_medicine)
 {
-
-    // printf("Pill Medicine %d in line %d is packaging\n", pill_medicines[index_medicine].id, pill_production_line->production_line.id);
-    pill_medicines[index_medicine].is_packaged = 1;
+    printf("Pill Medicine %d in line %d is packaging\n", pill_medicines[index_medicine].id, pill_production_line->production_line.id);
+    // pill_medicines[index_medicine].is_prescription_placed = rand() % 20 < 18 ? 1 : 0;
     pill_medicines[index_medicine].is_prescription_placed = 1;
+
+    if (pill_medicines[index_medicine].is_prescription_placed == 1)
+    {
+        pill_medicines[index_medicine].is_packaged = 1;
+        *shmptr_num_pill_medicines_packaged += 1;
+    }
+    else
+    {
+        pill_medicines[index_medicine].is_failed = 1;
+        *shmptr_num_pill_medicines_failed += 1;
+    }
 }
 
 int get_index_of_uninspected_medicine(Pill_Medicine *pill_medicines)
@@ -386,21 +395,6 @@ int get_index_of_uninspected_medicine(Pill_Medicine *pill_medicines)
         }
     }
     return -1;
-}
-
-void printPillMedicine(Pill_Med *pill_medicines)
-{
-    printf("Pill Medicines\n");
-    for (int i = 0; i < num_pill_meds; i++)
-    {
-        printf("Label: %s\n", pill_medicines[i].label.str);
-        printf("Number of containers: %d\n", pill_medicines[i].num_containers);
-        printf("Number of pills: %d\n", pill_medicines[i].num_pills);
-        printf("Size of pills: %d - %d\n", pill_medicines[i].min_size, pill_medicines[i].max_size);
-        printf("Color of pills: %d - %d\n", pill_medicines[i].min_color, pill_medicines[i].max_color);
-        printf("=====================================================================\n");
-    }
-    fflush(stdout);
 }
 
 int get_index_expected_medicine(int indx)

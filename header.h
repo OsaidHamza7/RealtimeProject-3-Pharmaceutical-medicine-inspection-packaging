@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <GL/glut.h>
 #include <math.h>
+#include <signal.h>
 
 #define FILE_NAME "arguments.txt"
 #define LIQUID_MEDICINES_FILE "liquid_medicines.txt"
@@ -32,7 +33,6 @@
 #define MAX_LINE_LENGTH 255
 #define NUM_SEMAPHORES 2
 #define max_additional_employees 10
-
 
 #define MAX_NUM_LIQUID_PRODUCTION_LINES 100
 #define MAX_NUM_PILL_PRODUCTION_LINES 100
@@ -59,6 +59,8 @@
 #define SEMKEY_NUM_PILL_MEDICINES_PRODUCED 6789
 #define SEMKEY_NUM_LIQUID_MEDICINES_FAILED 7890
 #define SEMKEY_NUM_PILL_MEDICINES_FAILED 8901
+#define SEMKEY_NUM_LIQUID_MEDICINES_PACKAGED 9012
+#define SEMKEY_NUM_PILL_MEDICINES_PACKAGED 1234
 
 #define START_YEAR 2025
 #define END_YEAR 2030
@@ -130,6 +132,7 @@ typedef struct Production_Line
     int id;
     int num_employes;
     int original_num_employes;
+    int from_line;
     int num_produced_medicines;
     int num_successful_medicines;
     int num_falied_medicines;

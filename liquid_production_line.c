@@ -9,7 +9,6 @@ void createLiquidMedicines();
 int get_index_of_uninspected_medicine(Bottle_Liquid_Medicine *bottles);
 int inspect_medicine(Bottle_Liquid_Medicine *bottles, int index_medicine, int index_expected_medicine);
 void package_medcine(Bottle_Liquid_Medicine *bottles, int index_medicine);
-void printLiquidMedicines();
 int get_index_expected_medicine(int indx);
 void decrease_employees(int signum);
 void increase_employees(int signum);
@@ -43,6 +42,8 @@ char *shmptr_liquid_medicines;
 int sem_liquid_production_lines;
 int sem_num_liquid_medicines_produced;
 int sem_num_pill_medicines_failed;
+int sem_num_liquid_medicines_packaged;
+
 int num_liq_meds = 0;
 
 sem_t mutex_liquid_midicines;
@@ -75,11 +76,12 @@ int main(int argc, char **argv)
 
     // Open the semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "liquid_production_line.c");
-    // 0 :shared between threads 1 :shared between process
+    sem_num_liquid_medicines_produced = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_PRODUCED, 1, 1, "liquid_production_line.c");
+    sem_num_pill_medicines_failed = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_FAILED, 1, 1, "liquid_production_line.c");
+    sem_num_liquid_medicines_packaged = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_PACKAGED, 1, 1, "liquid_production_line.c");
 
     // get information from the arguments
     getInformation(argv);
-    // printLiquidMedicines();
 
     // Thread to create the liquid medicines
     pthread_t create_liquid_medicine_thread;
@@ -127,27 +129,12 @@ void getInformation(char **argv)
     split_string(argv[7], range_expected_liq_medicine_level);
     split_string(argv[8], range_expected_liq_medicine_color);
 
-    // printf("=====================================================================\n");
-    // fflush(stdout);
-
-    // print all arguments
-    /*printf("production_line_num: %d\n", production_line_num);
-    printf("num_of_liquid_production_lines: %d\n", num_of_liquid_production_lines);
-    printf("num_employes: %d\n", number_of_employees);
-    printf("range_speed_lines: %d - %d\n", range_of_speed[0], range_of_speed[1]);
-
-    printf("range_level_liquid_medicine: %d - %d\n", range_level_liq_medicine[0], range_level_liq_medicine[1]);
-    printf("range_color_liquid_medicine: %d - %d\n\n", range_color_liq_medicine[0], range_color_liq_medicine[1]);
-
-    printf("range_expected_liquid_medicine_level: %d - %d\n", range_expected_liq_medicine_level[0], range_expected_liq_medicine_level[1]);
-    printf("range_expected_liquid_medicine_color: %d - %d\n", range_expected_liq_medicine_color[0], range_expected_liq_medicine_color[1]);
-    */
     acquireSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
 
     liquid_production_line->pid = getpid();
     liquid_production_line->production_line.id = production_line_num;
     liquid_production_line->production_line.num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
-    liquid_production_line->production_line.original_num_employes = get_random_number(number_of_employees[0], number_of_employees[1]);
+    liquid_production_line->production_line.original_num_employes = liquid_production_line->production_line.num_employes;
     liquid_production_line->production_line.speed = get_random_number(range_of_speed[0], range_of_speed[1]);
 
     releaseSem(sem_liquid_production_lines, 0, "liquid_production_line.c");
@@ -158,12 +145,6 @@ void getInformation(char **argv)
 
 void init_signals_handlers()
 {
-    /*if (sigset(SIGCLD, signal_handler) == -1)
-    { // set the signal handler for SIGINT
-        perror("Signal Error\n");
-        exit(-1);
-    }*/
-
     if (signal(SIGUSR1, increase_employees) == SIG_ERR)
     { // set the signal handler for SIGUSR1
         perror("Signal Error\n");
@@ -230,7 +211,7 @@ void employee(void *args)
         printf("index_expected_medicine %d\n", index_expected_medicine);
         printf("Employee %d in liquid line %d inspects the medicine %d\n", *emp_id, liquid_production_line->production_line.id, index_uninspected_medicine + 1);
         int j = inspect_medicine(liquid_production_line->bottles, index_uninspected_medicine, index_expected_medicine);
-        sleep(20); // sleep for 3 seconds to simulate the inspection process
+        sleep(5); // sleep for 5 seconds to simulate the inspection process
 
         // the inspection for this medicine is failed
         if (j == 0)
@@ -247,8 +228,7 @@ void employee(void *args)
 
         printf("Employee %d in liquid line %d packages the medicine \n", *emp_id, liquid_production_line->production_line.id);
         package_medcine(liquid_production_line->bottles, index_uninspected_medicine);
-        sleep(3); // sleep for 3 seconds to simulate the packaging process
-        *shmptr_num_liquid_medicines_packaged += 1;
+        sleep(1); // sleep for 1 seconds to simulate the packaging process
         printf("Liquid Medicine %d in line %d is packaged successfully\n", liquid_production_line->bottles[index_uninspected_medicine].id, liquid_production_line->production_line.id);
         fflush(stdout);
     }
@@ -268,9 +248,9 @@ void createLiquidMedicines()
         liquid_production_line->bottles[j].liquid_medicine.level = get_random_number(range_level_liq_medicine[0], range_level_liq_medicine[1]);
         liquid_production_line->bottles[j].liquid_medicine.color = get_random_number(range_color_liq_medicine[0], range_color_liq_medicine[1]);
         liquid_production_line->bottles[j].expiry_date = generate_random_date();
-        liquid_production_line->bottles[j].is_sealed = rand() % 10 < 8 ? 1 : 0;
-        liquid_production_line->bottles[j].is_label_placed = rand() % 10 < 8 ? 1 : 0;
-        liquid_production_line->bottles[j].is_date_printed = rand() % 10 < 8 ? 1 : 0;
+        liquid_production_line->bottles[j].is_sealed = rand() % 20 < 18 ? 1 : 0;
+        liquid_production_line->bottles[j].is_label_placed = rand() % 20 < 18 ? 1 : 0;
+        liquid_production_line->bottles[j].is_date_printed = rand() % 20 < 18 ? 1 : 0;
 
         int indx = rand() % num_liq_meds;
         liquid_production_line->bottles[j].label = liq_medicines[indx].label;
@@ -364,21 +344,20 @@ int inspect_medicine(Bottle_Liquid_Medicine *bottles, int index_medicine, int in
 void package_medcine(Bottle_Liquid_Medicine *bottles, int index_medicine)
 {
     printf("Bottle Liquid Medicine %d in line %d is packaging\n", bottles[index_medicine].id, liquid_production_line->production_line.id);
-    bottles[index_medicine].is_liquid_medicine_placed = 1;
-    bottles[index_medicine].is_prescription_placed = 1;
-}
+    bottles[index_medicine].is_liquid_medicine_placed = rand() % 20 < 18 ? 1 : 0;
+    bottles[index_medicine].is_prescription_placed = rand() % 20 < 18 ? 1 : 0;
+    // bottles[index_medicine].is_liquid_medicine_placed = 1;
+    // bottles[index_medicine].is_prescription_placed = 1;
 
-void printLiquidMedicines()
-{
-    printf("**********Liquid Medicines*********\n");
-    for (int i = 0; i < num_liq_meds; i++)
+    if (bottles[index_medicine].is_liquid_medicine_placed == 1 && bottles[index_medicine].is_prescription_placed == 1)
     {
-        printf("Liquid Medicine %d:\n", i + 1);
-        printf("Label: %s\n", liq_medicines[i].label.str);
-        printf("Min Level: %d\n", liq_medicines[i].min_level);
-        printf("Max Level: %d\n", liq_medicines[i].max_level);
-        printf("Min Color: %d\n", liq_medicines[i].min_color);
-        printf("Max Color: %d\n", liq_medicines[i].max_color);
+        bottles[index_medicine].is_packaged = 1;
+        *shmptr_num_liquid_medicines_packaged += 1;
+    }
+    else
+    {
+        bottles[index_medicine].is_failed = 1;
+        *shmptr_num_liquid_medicines_failed += 1;
     }
 }
 

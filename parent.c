@@ -12,7 +12,6 @@ void signal_handler_SIGALRM(int sig);
 void signal_handler_SIGCLD(int sig);
 void init_signals_handlers();
 void getArguments(int *numberArray);
-void printArguments();
 void initializeIPCResources();
 void exitProgram();
 void createGUI();
@@ -37,8 +36,8 @@ pid_t pids_pill_production_lines[MAX_NUM_PILL_PRODUCTION_LINES];
 pid_t pid_gui[1];
 
 // arrays of structs for all the processes
-Liquid_Production_Line liquid_production_lines[MAX_NUM_LIQUID_PRODUCTION_LINES];
-Pill_Production_Line pill_production_lines[MAX_NUM_PILL_PRODUCTION_LINES];
+Liquid_Production_Line *liquid_production_lines;
+Pill_Production_Line *pill_production_lines;
 
 // arguments from the file
 char production_line_num[10];
@@ -72,6 +71,8 @@ char *shmptr_num_pill_medicines_produced;
 char *shmptr_num_liquid_medicines_failed;
 char *shmptr_num_pill_medicines_failed;
 char *shmptr_num_liquid_medicines_packaged;
+char *shmptr_num_pill_medicines_packaged;
+
 char *shmptr_liquid_medicines;
 char *shmptr_pill_medicines;
 
@@ -84,6 +85,8 @@ int sem_num_liquid_medicines_produced;
 int sem_num_pill_medicines_produced;
 int sem_num_liquid_medicines_failed;
 int sem_num_pill_medicines_failed;
+int sem_num_liquid_medicines_packaged;
+int sem_num_pill_medicines_packaged;
 
 pthread_t thresholds_monitoring_thread;
 pthread_t speed_monitoring_thread;
@@ -100,10 +103,9 @@ int main(int argc, char **argv)
     char *file_liquid_medicines = (char *)malloc(50 * sizeof(char));
     char *file_pill_medicines = (char *)malloc(50 * sizeof(char));
 
-    // Start the program
     printf("*******************************************\nStart the program, My process ID is %d\n\n", getpid());
 
-    // check a number of arguments,and read a file name
+    // check a number of arguments,and read a file names
     checkArguments(argc, argv, file_arguments, file_liquid_medicines, file_pill_medicines);
 
     // to read from User defined numbers file (filename.txt)
@@ -113,7 +115,6 @@ int main(int argc, char **argv)
 
     // get the arguments from the file
     getArguments(arr_of_arguments);
-    // printArguments();
 
     // initialize IPCs resources (shared memory, semaphores, message queues)
     initializeIPCResources();
@@ -136,30 +137,10 @@ int main(int argc, char **argv)
     // set an alarm for the simulation threshold time
     alarm(simulation_threshold_time);
 
-    // create the GUI
+    // create the processes (liquid production lines, pill production lines, GUI)
     createGUI();
     createLiquidProductionLines();
     createPillProductionLines();
-
-    /*
-    join the monitoring thread to the main thread to keep the program
-    running and stop it when one of the thresholds is reached
-    */
-
-    // while (1)
-    // {
-    //     pause();
-    //     is_end = 0;
-    //     if (is_alarmed)
-    //     {
-    //         printf("The trishold time is reached, the program is finished.\n\n");
-    //         is_end = 1;
-    //     }
-    //     if (is_end)
-    //     {
-    //         break;
-    //     }
-    // }
 
     pthread_join(thresholds_monitoring_thread, NULL);
     pthread_cancel(speed_monitoring_thread);
@@ -176,14 +157,8 @@ void init_signals_handlers()
         perror("Signal Error\n");
         exit(-1);
     }
-    // if (sigset(SIGCLD, signal_handler_SIGCLD) == -1)
-    // { // set the signal handler for SIGALRM
-    //     perror("Signal Error\n");
-    //     exit(-1);
-    // }
 }
 
-// function signal_handler_SIGALRM
 void signal_handler_SIGALRM(int sig)
 {
     is_alarmed = 1;
@@ -299,9 +274,6 @@ function to initialize IPCs resources (shared memory, semaphores, message queues
 */
 void initializeIPCResources()
 {
-    // Create a Massage Queues (2 queues done)
-    // msg_ground = createMessageQueue(MSGQKEY_GROUND, "parent.c");       // Create a massage queue for the ground
-
     // Create a Shared Memories for struct of processes (4 shared memories done)
     shmptr_liquid_production_lines = createSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), "parent.c");
     shmptr_pill_production_lines = createSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), "parent.c");
@@ -314,6 +286,7 @@ void initializeIPCResources()
 
     shmptr_num_pill_medicines_produced = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), "parent.c");
     shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "parent.c");
+    shmptr_num_pill_medicines_packaged = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PACKAGED, sizeof(int), "parent.c");
 
     int x = 0;
 
@@ -322,8 +295,11 @@ void initializeIPCResources()
     memcpy(shmptr_num_pill_medicines_failed, &x, sizeof(int));
     memcpy(shmptr_num_liquid_medicines_failed, &x, sizeof(int));
     memcpy(shmptr_num_liquid_medicines_packaged, &x, sizeof(int));
+    memcpy(shmptr_num_pill_medicines_packaged, &x, sizeof(int));
     memcpy(shmptr_liquid_medicines, liquid_medicines, num_liq_meds * sizeof(Liq_Med));
     memcpy(shmptr_pill_medicines, pill_medicines, num_pill_meds * sizeof(Pill_Med));
+    liquid_production_lines = (struct Liquid_Production_Line *)shmptr_liquid_production_lines;
+    pill_production_lines = (struct Pill_Production_Line *)shmptr_pill_production_lines;
 
     // Create a Semaphores
     sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "parent.c");
@@ -331,8 +307,12 @@ void initializeIPCResources()
 
     sem_num_liquid_medicines_produced = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_PRODUCED, 1, 1, "parent.c");
     sem_num_pill_medicines_produced = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_PRODUCED, 1, 1, "parent.c");
+
     sem_num_liquid_medicines_failed = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_FAILED, 1, 1, "parent.c");
     sem_num_pill_medicines_failed = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_FAILED, 1, 1, "parent.c");
+
+    sem_num_liquid_medicines_packaged = createSemaphore(SEMKEY_NUM_LIQUID_MEDICINES_PACKAGED, 1, 1, "parent.c");
+    sem_num_pill_medicines_packaged = createSemaphore(SEMKEY_NUM_PILL_MEDICINES_PACKAGED, 1, 1, "parent.c");
 }
 
 /*
@@ -396,23 +376,25 @@ than the other so send an employee from the faster one to the slower one
 */
 void speed_monitoring()
 {
-
     // check the speed according to the num produced medicines
     // sort all the production lines(liquid and pill) according to the num of produced medicines
     // send an employee from the faster ones to the slower ones if the difference in the num of produced medicines is greater than 2
+    sleep(5);
     while (!is_end)
     {
 
-        Liquid_Production_Line temp_liquid[5];
-        Pill_Production_Line temp_pill[5];
+        Liquid_Production_Line temp_liquid[4];
+        Pill_Production_Line temp_pill[4];
 
         for (int i = 0; i < num_pill_production_lines; i++)
         {
+
             temp_pill[i].production_line.id = pill_production_lines[i].production_line.id;
             temp_pill[i].production_line.num_produced_medicines = pill_production_lines[i].production_line.num_produced_medicines;
             temp_pill[i].production_line.num_employes = pill_production_lines[i].production_line.num_employes;
-            // temp_pill[i].original_num_employes = pill_production_lines[i].original_num_employes;
+            temp_pill[i].production_line.original_num_employes = pill_production_lines[i].production_line.original_num_employes;
             temp_pill[i].production_line.speed = pill_production_lines[i].production_line.speed;
+
             for (int j = 0; j < pill_production_lines[i].production_line.num_produced_medicines; j++)
             {
                 temp_pill[i].pill_medicines[j] = pill_production_lines[i].pill_medicines[j];
@@ -429,16 +411,13 @@ void speed_monitoring()
             }
         }
 
-        printf("hi\n");
-        fflush(stdout);
-
         // copy the production lines to the temp arrays
         for (int i = 0; i < num_liquid_production_lines; i++)
         {
             temp_liquid[i].production_line.id = liquid_production_lines[i].production_line.id;
             temp_liquid[i].production_line.num_produced_medicines = liquid_production_lines[i].production_line.num_produced_medicines;
             temp_liquid[i].production_line.num_employes = liquid_production_lines[i].production_line.num_employes;
-            // temp_liquid[i].original_num_employes = liquid_production_lines[i].original_num_employes;
+            temp_liquid[i].production_line.original_num_employes = liquid_production_lines[i].production_line.original_num_employes;
             temp_liquid[i].production_line.speed = liquid_production_lines[i].production_line.speed;
             for (int j = 0; j < liquid_production_lines[i].production_line.num_produced_medicines; j++)
             {
@@ -477,12 +456,18 @@ void speed_monitoring()
         // check the speed of the liquid production lines the first with last and second with second last and so on
         for (int i = 0; i < num_liquid_production_lines / 2; i++)
         {
-            if (temp_liquid[i].production_line.num_produced_medicines - temp_liquid[num_liquid_production_lines - i - 1].production_line.num_produced_medicines > 2)
+
+            if (temp_liquid[num_liquid_production_lines - i - 1].production_line.num_produced_medicines < 5 && temp_liquid[i].production_line.num_produced_medicines - temp_liquid[num_liquid_production_lines - i - 1].production_line.num_produced_medicines > 2)
             {
+                printf("liquid from %d to %d\n", temp_liquid[i].production_line.id, temp_liquid[num_liquid_production_lines - i - 1].production_line.id);
+
                 // send an employee from the faster one to the slower one
                 acquireSem(sem_liquid_production_lines, 0, "parent.c");
-                liquid_production_lines[temp_liquid[i].production_line.id].production_line.num_employes--;
-                liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id].production_line.num_employes++;
+                liquid_production_lines[temp_liquid[i].production_line.id - 1].production_line.num_employes--;
+                liquid_production_lines[temp_liquid[i].production_line.id - 1].production_line.original_num_employes--;
+
+                liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id - 1].production_line.num_employes++;
+                liquid_production_lines[temp_liquid[num_liquid_production_lines - i - 1].production_line.id - 1].production_line.from_line = temp_liquid[i].production_line.id;
 
                 // reduce the speed of production line of the faster one by a ratio of one employee to all original employees
                 liquid_production_lines[temp_liquid[i].production_line.id].production_line.speed = liquid_production_lines[temp_liquid[i].production_line.id].production_line.speed - (liquid_production_lines[temp_liquid[i].production_line.id].production_line.original_num_employes / 2);
@@ -496,17 +481,24 @@ void speed_monitoring()
         // check the speed of the pill production lines the first with last and second with second last and so on
         for (int i = 0; i < num_pill_production_lines / 2; i++)
         {
-            if (temp_pill[i].production_line.num_produced_medicines - temp_pill[num_pill_production_lines - i - 1].production_line.num_produced_medicines > 2)
+            if (temp_pill[num_pill_production_lines - i - 1].production_line.num_produced_medicines < 5 && temp_pill[i].production_line.num_produced_medicines - temp_pill[num_pill_production_lines - i - 1].production_line.num_produced_medicines > 2)
             {
+                printf("pill from %d to %d\n", temp_pill[i].production_line.id, temp_pill[num_pill_production_lines - i - 1].production_line.id);
                 // send an employee from the faster one to the slower one
                 acquireSem(sem_pill_production_lines, 0, "parent.c");
-                pill_production_lines[temp_pill[i].production_line.id].production_line.num_employes--;
-                pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id].production_line.num_employes++;
+                pill_production_lines[temp_pill[i].production_line.id - 1].production_line.num_employes--;
+                pill_production_lines[temp_pill[i].production_line.id - 1].production_line.original_num_employes--;
+
+                pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id - 1].production_line.num_employes++;
+                pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id - 1].production_line.from_line = temp_pill[i].production_line.id;
+
+                // printf("hi1 %d\n", pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id - 1].production_line.from_line);
+                // printf("hi2 %d\n", pill_production_lines[temp_pill[i].production_line.id - 1].production_line.id);
 
                 // send a signal to the production line to increase employee thread
-                kill(pids_pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id], SIGUSR1);
+                // kill(pids_pill_production_lines[temp_pill[num_pill_production_lines - i - 1].production_line.id - 1], SIGUSR1);
                 // send a signal to the production line to decrease employee thread
-                kill(pids_pill_production_lines[temp_pill[i].production_line.id], SIGUSR2);
+                // kill(pids_pill_production_lines[temp_pill[i].production_line.id - 1], SIGUSR2);
 
                 // reduce the speed of production line of the faster one by a ratio of one employee to all original employees
                 pill_production_lines[temp_pill[i].production_line.id].production_line.speed = pill_production_lines[temp_pill[i].production_line.id].production_line.speed - (pill_production_lines[temp_pill[i].production_line.id].production_line.original_num_employes / 2);
@@ -517,26 +509,28 @@ void speed_monitoring()
             }
         }
 
-        sleep(3);
+        sleep(10);
 
         // return the employees to their original production lines
         for (int i = 0; i < num_liquid_production_lines; i++)
         {
             acquireSem(sem_liquid_production_lines, 0, "parent.c");
 
-            // check if the number of employees is less than the original number of employees
-            if (liquid_production_lines[i].production_line.num_employes < liquid_production_lines[i].production_line.original_num_employes)
+            // check if the number of employees is large than the original number of employees
+            if (liquid_production_lines[i].production_line.num_employes > liquid_production_lines[i].production_line.original_num_employes)
             {
-                liquid_production_lines[i].production_line.num_employes++;
+                liquid_production_lines[i].production_line.num_employes--;
+                liquid_production_lines[liquid_production_lines[i].production_line.from_line - 1].production_line.original_num_employes++;
+
                 // send a signal to the production line to increase employee thread
-                kill(pids_liquid_production_lines[i], SIGUSR1);
+                // kill(pids_liquid_production_lines[i], SIGUSR1);
             }
-            else if (liquid_production_lines[i].production_line.num_employes > liquid_production_lines[i].production_line.original_num_employes)
+            /*else if (liquid_production_lines[i].production_line.num_employes > liquid_production_lines[i].production_line.original_num_employes)
             {
                 liquid_production_lines[i].production_line.num_employes--;
                 // send a signal to the production line to decrease employee thread
-                kill(pids_liquid_production_lines[i], SIGUSR2);
-            }
+                // kill(pids_liquid_production_lines[i], SIGUSR2);
+            }*/
 
             releaseSem(sem_liquid_production_lines, 0, "parent.c");
         }
@@ -546,18 +540,20 @@ void speed_monitoring()
             acquireSem(sem_pill_production_lines, 0, "parent.c");
 
             // check if the number of employees is less than the original number of employees
-            if (pill_production_lines[i].production_line.num_employes < pill_production_lines[i].production_line.original_num_employes)
+            if (pill_production_lines[i].production_line.num_employes > pill_production_lines[i].production_line.original_num_employes)
             {
-                pill_production_lines[i].production_line.num_employes++;
+                pill_production_lines[i].production_line.num_employes--;
+                pill_production_lines[pill_production_lines[i].production_line.from_line - 1].production_line.original_num_employes++;
+
                 // send a signal to the production line to increase employee thread
-                kill(pids_pill_production_lines[i], SIGUSR1);
+                // kill(pids_pill_production_lines[i], SIGUSR1);
             }
-            else if (pill_production_lines[i].production_line.num_employes > pill_production_lines[i].production_line.original_num_employes)
+            /*else if (pill_production_lines[i].production_line.num_employes > pill_production_lines[i].production_line.original_num_employes)
             {
                 pill_production_lines[i].production_line.num_employes--;
                 // send a signal to the production line to decrease employee thread
-                kill(pids_pill_production_lines[i], SIGUSR2);
-            }
+                // kill(pids_pill_production_lines[i], SIGUSR2);
+            }*/
 
             releaseSem(sem_pill_production_lines, 0, "parent.c");
         }
@@ -579,38 +575,7 @@ void getArguments(int *numberArray)
     simulation_threshold_time = numberArray[6];
 }
 
-void printArguments()
-{
-    // print the arguments read from the file
-    printf("The arguments read from the file are:\n");
-    printf("Number of liquid production lines: %d\n", num_liquid_production_lines);
-    printf("Number of pill production lines: %d\n", num_pill_production_lines);
-    printf("Number of employees: %d - %d\n", num_employees[0], num_employees[1]);
-    printf("Range of speed lins: %d - %d\n", range_speed_lines[0], range_speed_lines[1]);
-    printf("Range of liquid medicines: %d - %d\n", range_of_liquid_medicines[0], range_of_liquid_medicines[1]);
-    printf("Range of pill medicines: %d - %d\n", range_of_pill_medicines[0], range_of_pill_medicines[1]);
-    printf("Range of plastic containers: %d - %d\n", range_of_plastic_containers[0], range_of_plastic_containers[1]);
-    printf("Range of pills: %d - %d\n", range_of_pills[0], range_of_pills[1]);
-    printf("Range of level liquid medicines: %d - %d\n", range_level_liquid_medicine[0], range_level_liquid_medicine[1]);
-    printf("Range of color liquid medicines: %d - %d\n", range_color_liquid_medicine[0], range_color_liquid_medicine[1]);
-    printf("Range of size pill: %d - %d\n", range_size_pill[0], range_size_pill[1]);
-    printf("Range of color pill: %d - %d\n", range_color_pill[0], range_color_pill[1]);
-    printf("range_expected_liquid_medicine_level: %d - %d\n", range_expected_liquid_medicine_level[0], range_expected_liquid_medicine_level[1]);
-    printf("range_expected_liquid_medicine_color: %d - %d\n", range_expected_liquid_medicine_color[0], range_expected_liquid_medicine_color[1]);
-    printf("range_expected_pill_medicine_color: %d - %d\n", range_expected_pill_medicine_color[0], range_expected_pill_medicine_color[1]);
-    printf("range_expected_pill_medicine_size: %d - %d\n", range_expected_pill_medicine_size[0], range_expected_pill_medicine_size[1]);
-
-    printf("Threshold of number of liquid medicines produced: %d\n", threshold_of_num_liquid_medicines_produced);
-    printf("Threshold of number of pill medicines produced: %d\n", threshold_of_num_pill_medicines_produced);
-    printf("Threshold of number of liquid medicines failed: %d\n", threshold_of_num_liquid_medicines_failed);
-    printf("Threshold of number of pill medicines failed: %d\n", threshold_of_num_pill_medicines_failed);
-    printf("Simulation threshold time: %d\n", simulation_threshold_time);
-    printf("\n");
-}
-
-// function checkArguments
 void checkArguments(int argc, char **argv, char *file_name, char *file_liquid_medicines, char *file_pill_medicines)
-
 {
     if (argc != 4) // check if the user passed the correct arguments
     {
@@ -623,12 +588,13 @@ void checkArguments(int argc, char **argv, char *file_name, char *file_liquid_me
     else
     {
         strcpy(file_name, argv[1]); // Use the file names provided by the user
+        strcpy(file_liquid_medicines, argv[2]);
+        strcpy(file_pill_medicines, argv[3]);
     }
 }
 
 void exitProgram()
 {
-
     printf("\nKilling all processes...\n");
     fflush(stdout);
 
@@ -641,13 +607,24 @@ void exitProgram()
     printf("Cleaning up IPC resources...\n");
     fflush(stdout);
 
+    // delete all the shared memories
     deleteSharedMemory(SHKEY_LIQUID_PRODUCTION_LINES, num_liquid_production_lines * sizeof(struct Liquid_Production_Line), shmptr_liquid_production_lines);
     deleteSharedMemory(SHKEY_PILL_PRODUCTION_LINES, num_pill_production_lines * sizeof(struct Pill_Production_Line), shmptr_pill_production_lines);
     deleteSharedMemory(SHKEY_LIQUID_MEDICINES, num_liq_meds * sizeof(Liq_Med), shmptr_liquid_medicines);
     deleteSharedMemory(SHKEY_PILL_MEDICINES, num_pill_meds * sizeof(Pill_Med), shmptr_pill_medicines);
+    deleteSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), shmptr_num_liquid_medicines_produced);
+    deleteSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_FAILED, sizeof(int), shmptr_num_liquid_medicines_failed);
+    deleteSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PACKAGED, sizeof(int), shmptr_num_liquid_medicines_packaged);
+    deleteSharedMemory(SHKEY_NUM_PILL_MEDICINES_PRODUCED, sizeof(int), shmptr_num_pill_medicines_produced);
+    deleteSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), shmptr_num_pill_medicines_failed);
 
+    // delete all the semaphores
     deleteSemaphore(sem_liquid_production_lines);
     deleteSemaphore(sem_pill_production_lines);
+    deleteSemaphore(sem_num_liquid_medicines_produced);
+    deleteSemaphore(sem_num_pill_medicines_produced);
+    deleteSemaphore(sem_num_liquid_medicines_failed);
+    deleteSemaphore(sem_num_pill_medicines_failed);
 
     printf("IPC resources cleaned up successfully\n");
     printf("Exiting...\n");

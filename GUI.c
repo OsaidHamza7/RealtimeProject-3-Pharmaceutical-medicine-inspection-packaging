@@ -20,10 +20,6 @@ int ProductID[8] = {0};
 
 int liquidMedicinesCount[LINES] = {0}; // Keeps track of the number of medicines in each liquid line
 int pillmedicinesCount[LINES] = {0};   // Keeps track of the number of medicines in each pill line
-int numFailedBottleMedicine = 0;       // Number of failed bottle medicine
-int numSuccessfulBottleMedicine = 0;   // Number of successful bottle medicine
-int numFailedPillMedicine = 0;         // Number of failed pill medicine
-int numSuccessfulPillMedicine = 0;     // Number of successful pill medicine
 
 char *shmptr_liquid_production_lines;
 char *shmptr_num_liquid_medicines_produced;
@@ -45,27 +41,6 @@ int sem_num_pill_medicines_failed;
 
 Liquid_Production_Line *liquid_lines;
 Pill_Production_Line *pill_lines;
-
-void initializeLines()
-{
-    srand(time(NULL));
-    /*for (int i = 0; i < LINES; ++i)
-    {
-        for (int j = 0; j < MEDICINES_PER_LINE; ++j)
-        {
-            lines[i][j].type = (i < 4) ? BOTTLE : PILL;
-            lines[i][j].failed = rand() % 2; // Randomly determine if the medicine failed or not
-            if (lines[i][j].type == BOTTLE)
-            {
-                lines[i][j].liquidLevel = (rand() % 41) + 10; // Random liquid level between 10 and 50
-            }
-            else
-            {
-                lines[i][j].numberOfPills = (rand() % 5) + 1;
-            }
-        }
-    }*/
-}
 
 void drawLiquidBottle(float x, float y, float liquidLevel, int numColor, int medicine_num)
 {
@@ -198,6 +173,7 @@ void drawPill(float x, float y, int numPills, int numColor, int medicine_num)
         glEnd();
     }
 }
+
 void drawTextLabel(const char *text, float x, float y, void *font)
 {
     glColor3f(1.0, 1.0, 1.0);
@@ -297,56 +273,6 @@ void drawBoxProduced(float x, float y, int numMedicine, const char *label)
     glEnd();
 }
 
-void addNewMedicine(enum ProductType type, int line_num)
-{
-    // Add a new medicine to the specified production line
-    /*if (liquidMedicinesCount[line_num - 1] < MEDICINES_PER_LINE)
-    {
-        if (type == BOTTLE)
-        {
-            liquid_lines.lines[i][medicineCount[i]].liquidLevel = (% 41) + 10;
-            liquidMedicinesCount[line_num - 1]++;
-        }
-    }
-*/
-    // Update the count of failed or successful medicine
-    numFailedBottleMedicine = 0;
-    numSuccessfulBottleMedicine = 0;
-    numFailedPillMedicine = 0;
-    numSuccessfulPillMedicine = 0;
-    /*for (int i = 0; i < LINES; ++i)
-    {
-        for (int j = 0; j < medicineCount[i]; ++j)
-        {
-            if (lines[i][j].failed)
-            {
-                if (lines[i][j].type == BOTTLE)
-                {
-                    numFailedBottleMedicine++;
-                }
-                else
-                {
-                    numFailedPillMedicine++;
-                }
-            }
-            else
-            {
-                if (lines[i][j].type == BOTTLE)
-                {
-                    numSuccessfulBottleMedicine++;
-                }
-                else
-                {
-                    numSuccessfulPillMedicine++;
-                }
-            }
-        }
-    }*/
-
-    glutPostRedisplay();
-    // glutTimerFunc(TIMER_INTERVAL, addNewMedicine, 0);
-}
-
 void drawHuman(float x, float y, int numColor)
 {
     switch (numColor)
@@ -404,70 +330,13 @@ void drawHuman(float x, float y, int numColor)
     glEnd();
 }
 
-/*void drawOnlyOneHuman(float x, float j, int numColor)
-{
-    switch (numColor)
-    {
-    case 1:
-        glColor3f(0.0f, 0.75f, 1.0f); // RGB: (0, 191, 255)
-        break;
-    case 2:
-        glColor3f(0.86f, 0.08f, 0.24f); // RGB: (220, 20, 60)
-        break;
-    case 3:
-        glColor3f(0.13f, 0.55f, 0.13f); // RGB: (34, 139, 34)
-        break;
-    case 4:
-        glColor3f(0.85f, 0.65f, 0.13f); // RGB: (218, 165, 32)
-        break;
-    case 5:
-        glColor3f(0.58f, 0.44f, 0.86f); // RGB: (148, 112, 219)
-        break;
-    case 6:
-        glColor3f(1.0f, 0.39f, 0.28f); // RGB: (255, 99, 71)
-        break;
-    case 7:
-        glColor3f(0.25f, 0.88f, 0.82f); // RGB: (64, 224, 208)
-        break;
-    default:
-        glColor3f(0.44f, 0.5f, 0.56f); // RGB: (112, 128, 144)
-    }
-    glBegin(GL_LINES);
-    glVertex2f(x, y);
-    glVertex2f(x, y - 40);
-    glEnd();
-
-    glPointSize(7.0);
-    glBegin(GL_POINTS);
-    glVertex2f(x, y);
-    glEnd();
-
-    // Arms
-    glBegin(GL_LINES);
-    glVertex2f(x, y - 20);
-    glVertex2f(x - 15, y - 30);
-
-    glVertex2f(x, y - 20);
-    glVertex2f(x + 15, y - 30);
-    glEnd();
-
-    // Legs
-    glBegin(GL_LINES);
-    glVertex2f(x, y - 40);
-    glVertex2f(x - 10, y - 55);
-
-    glVertex2f(x, y - 40);
-    glVertex2f(x + 10, y - 55);
-    glEnd();
-}*/
-
 void init()
 {
+    srand(time(NULL));
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT);
-    // initializeLines();
 }
 
 void display()
@@ -492,8 +361,6 @@ void display()
     boxX += 480;
     drawBoxProduced(boxX, boxY, (int)(*shmptr_num_pill_medicines_produced), "Produced Pill Medicine");
 
-    // check the shared memory for the liquid production lines,and if there is a new medicine, update the GUI
-
     for (int i = 0; i < LINES; ++i)
     {
         float x = 50 + i * LINE_SPACING;
@@ -506,20 +373,41 @@ void display()
         int numColor = i + 1;
 
         int numPeople = 0; // Number of people, you can modify this based on your logic
+        int newPeople = 0;
 
         if (i < 4)
         {
-            numPeople = liquid_lines[i].production_line.num_employes;
+            numPeople = liquid_lines[i].production_line.original_num_employes;
         }
         else
         {
-            numPeople = pill_lines[i - 4].production_line.num_employes;
+            numPeople = pill_lines[i - 4].production_line.original_num_employes;
         }
 
+        float personX;
+        float personY;
         for (int j = 0; j < numPeople; ++j)
         {
-            float personX = 50 + i * LINE_SPACING;
-            float personY = 640.0 - j * 88; // Adjusted spacing between people
+            personX = 50 + i * LINE_SPACING;
+            personY = 640.0 - j * 88; // Adjusted spacing between people
+            drawHuman(personX + 50, personY, numColor);
+        }
+
+        if (i < 4)
+        {
+            newPeople = liquid_lines[i].production_line.num_employes - liquid_lines[i].production_line.original_num_employes;
+            numColor = liquid_lines[i].production_line.from_line;
+        }
+        else
+        {
+            newPeople = pill_lines[i - 4].production_line.num_employes - pill_lines[i - 4].production_line.original_num_employes;
+            numColor = pill_lines[i - 4].production_line.from_line + 4;
+        }
+
+        for (int j = numPeople; j < numPeople+newPeople; ++j)
+        {
+            personX = 50 + i * LINE_SPACING;
+            personY = 640.0 - j * 88; // Adjusted spacing between people
             drawHuman(personX + 50, personY, numColor);
         }
 
@@ -602,17 +490,9 @@ int main(int argc, char **argv)
     shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "GUI.c");
     shmptr_num_pill_medicines_packaged = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_PACKAGED, sizeof(int), "GUI.c");
 
-    // shmptr_num_liquid_medicines_produced = createSharedMemory(SHKEY_NUM_LIQUID_MEDICINES_PRODUCED, sizeof(int), "liquid_production_line.c");
-    // shmptr_num_pill_medicines_failed = createSharedMemory(SHKEY_NUM_PILL_MEDICINES_FAILED, sizeof(int), "liquid_production_line.c");
-
-    // Open the semaphores
-    sem_liquid_production_lines = createSemaphore(SEMKEY_LIQUID_PRODUCTION_LINES, 1, 1, "GUI.c");
-    sem_pill_production_lines = createSemaphore(SEMKEY_PILL_PRODUCTION_LINES, 1, 1, "GUI.c");
-
     init();
     glutDisplayFunc(display); // Register display callback function
     glutIdleFunc(display);
-    // glutTimerFunc(TIMER_INTERVAL, addNewMedicine, 0);
     glutMainLoop();
     return 0;
 }
