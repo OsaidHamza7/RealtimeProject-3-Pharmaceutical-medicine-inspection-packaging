@@ -49,5 +49,5 @@ The simulation is designed to represent a pharmaceutical factory that produces a
 
 - **Osaid Hamza - Team Leader**
 - Razan Abdelrahman
-- Misam Alaa
+- Maisam Alaa
 - Ansam Rihan
